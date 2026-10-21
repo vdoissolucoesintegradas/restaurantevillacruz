@@ -1,0 +1,2 @@
+-- Intentionally empty. The first administrator and company must be created
+-- explicitly in the trusted Supabase SQL Editor; never seed production users.
