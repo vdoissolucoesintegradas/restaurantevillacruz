@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#183c40">
+  <title>Villa Cruz · Gestão</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <section id="login-screen" class="login-screen" hidden>
+    <div class="login-card">
+      <div class="brand-mark">VC</div>
+      <p class="eyebrow">GESTÃO FINANCEIRA E OPERACIONAL</p>
+      <h1>Villa Cruz</h1>
+      <p class="muted">Acesse sua área de gestão.</p>
+      <form id="login-form" class="form-stack">
+        <label>E-mail<input name="email" type="email" autocomplete="username" required></label>
+        <label>Senha<input name="password" type="password" autocomplete="current-password" required></label>
+        <button class="button primary full" type="submit">Entrar</button>
+        <p id="login-error" class="form-error" role="alert"></p>
+      </form>
+      <p class="login-foot">Acesso restrito a usuários autorizados.</p>
+    </div>
+  </section>
+
+  <div id="app-shell" class="app-shell" hidden>
+    <aside id="sidebar" class="sidebar">
+      <div class="brand"><div class="brand-mark small">VC</div><div><strong>Villa Cruz</strong><small>Gestão</small></div></div>
+      <div class="unit-badge"><span class="status-dot"></span><span id="unit-name">Villa Cruz</span></div>
+      <nav id="navigation" aria-label="Navegação principal">
+        <p class="nav-label">OPERAÇÃO</p>
+        <button class="nav-item active" data-page="overview"><span class="nav-icon">⌂</span>Visão geral</button>
+        <button class="nav-item" data-page="sales"><span class="nav-icon">↗</span>Faturamento e CMV</button>
+        <button class="nav-item" data-page="inventory"><span class="nav-icon">▤</span>Estoque</button>
+        <button class="nav-item" data-page="expenses"><span class="nav-icon">▧</span>Despesas e notas</button>
+        <button class="nav-item" data-page="cash"><span class="nav-icon">◫</span>Caixa da loja</button>
+        <p class="nav-label management">GESTÃO</p>
+        <button class="nav-item" data-page="dre"><span class="nav-icon">▥</span>DRE</button>
+        <button class="nav-item" data-page="reports"><span class="nav-icon">▦</span>Relatórios</button>
+        <p class="nav-label admin-nav">ADMINISTRAÇÃO</p>
+        <button class="nav-item admin-nav" data-page="import"><span class="nav-icon">⇧</span>Importar Excel</button>
+        <button class="nav-item admin-nav" data-page="audit"><span class="nav-icon">◷</span>Auditoria</button>
+        <button class="nav-item admin-nav" data-page="users"><span class="nav-icon">♙</span>Usuários</button>
+        <button class="nav-item admin-nav" data-page="settings"><span class="nav-icon">⚙</span>Metas e categorias</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="profile"><div class="avatar" id="profile-initials">VC</div><div class="profile-text"><strong id="profile-name">Usuário</strong><small id="profile-role">Perfil</small></div><button id="logout-button" class="icon-button" title="Sair" aria-label="Sair">↪</button></div>
+        <div class="version-label">Dados armazenados com segurança</div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="mobile-header"><button id="menu-toggle" class="icon-button" aria-label="Abrir menu">☰</button><div class="brand-mark small">VC</div><strong>Villa Cruz</strong><button id="mobile-logout" class="icon-button" aria-label="Sair">↪</button></header>
+      <div class="page-wrap">
+        <div class="page-topline"><span>Villa Cruz</span><span class="crumb-sep">/</span><span id="breadcrumb">Visão geral</span><span id="today-label" class="today-label"></span></div>
+        <div id="page-content" aria-live="polite"><div class="loading-state"><span class="spinner"></span>Carregando...</div></div>
+        <footer class="app-footer">Villa Cruz · Gestão operacional e financeira <span>•</span> America/São Paulo</footer>
+      </div>
+    </main>
+  </div>
+  <div id="toast-region" class="toast-region" aria-live="polite"></div>
+</body>
+</html>
