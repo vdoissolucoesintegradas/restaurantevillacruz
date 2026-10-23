@@ -103,15 +103,40 @@ app.get('/api/auth/csrf', (req, res) => { req.session.csrf ||= crypto.randomByte
 app.post('/api/auth/login', authLimit, async (req, res, next) => {
   try {
     const email = text(req.body.email, 254).toLowerCase();
-    const userResult = await pool.query('SELECT id,name,email,password_hash,role,active FROM users WHERE email=$1', [email]);
+    const userResult = await pool.query('SELECT id,name,email,password_hash,role,active,must_change_password FROM users WHERE email=$1', [email]);
     const user = userResult.rows[0];
     const ok = user && user.active && await bcrypt.compare(String(req.body.password || ''), user.password_hash);
     if (!ok) return fail(res, 401, 'E-mail ou senha inválidos.');
     req.session.regenerate(err => {
       if (err) return next(err);
-      req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, roleLabel: roleLabels[user.role] };
+      req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, roleLabel: roleLabels[user.role], mustChangePassword: user.must_change_password };
       req.session.csrf = crypto.randomBytes(32).toString('hex');
       req.session.save(err2 => err2 ? next(err2) : res.json({ user: req.session.user, csrf: req.session.csrf }));
+    });
+  } catch (e) { next(e); }
+});
+app.post('/api/auth/change-password', requireAuth, async (req, res, next) => {
+  try {
+    if (!req.session.user.mustChangePassword) return fail(res, 403, 'A troca obrigatória de senha não está pendente nesta sessão.');
+    const currentPassword = String(req.body.current_password || '');
+    const newPassword = String(req.body.new_password || '');
+    const confirmation = String(req.body.confirm_password || '');
+    if (newPassword.length < 8 || Buffer.byteLength(newPassword, 'utf8') > 72) return fail(res, 400, 'A nova senha deve ter pelo menos 8 caracteres e no máximo 72 bytes em UTF-8.');
+    if (newPassword !== confirmation) return fail(res, 400, 'A confirmação da senha não confere.');
+    const found = await pool.query('SELECT password_hash,active FROM users WHERE id=$1', [req.session.user.id]);
+    if (!found.rowCount || !found.rows[0].active) return fail(res, 401, 'Conta indisponível. Entre novamente.');
+    if (!await bcrypt.compare(currentPassword, found.rows[0].password_hash)) return fail(res, 400, 'A senha atual está incorreta.');
+    if (await bcrypt.compare(newPassword, found.rows[0].password_hash)) return fail(res, 400, 'Escolha uma senha diferente da senha atual.');
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    const updated = await pool.query('UPDATE users SET password_hash=$1,must_change_password=false,updated_at=now() WHERE id=$2 AND password_hash=$3 AND must_change_password=true RETURNING id', [passwordHash, req.session.user.id, found.rows[0].password_hash]);
+    if (!updated.rowCount) return fail(res, 409, 'A senha já foi alterada. Entre novamente com a nova senha.');
+    await audit(pool, req, 'villa-cruz', 'change', 'user_password', req.session.user.id, null, { must_change_password: false });
+    const user = { ...req.session.user, mustChangePassword: false };
+    req.session.regenerate(err => {
+      if (err) return next(err);
+      req.session.user = user;
+      req.session.csrf = crypto.randomBytes(32).toString('hex');
+      req.session.save(err2 => err2 ? next(err2) : res.json({ user, csrf: req.session.csrf }));
     });
   } catch (e) { next(e); }
 });
@@ -129,7 +154,13 @@ async function unitFor(req) {
   return q.rows[0] || null;
 }
 async function routeUnit(req, res) { const unit = await unitFor(req); if (!unit) fail(res, 403, 'Unidade não autorizada.'); return unit; }
-app.use('/api', (req, res, next) => { if (req.path.startsWith('/auth/')) return next(); requireAuth(req, res, next); });
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/auth/')) return next();
+  requireAuth(req, res, () => {
+    if (req.session.user.mustChangePassword) return fail(res, 428, 'Troque sua senha para continuar.');
+    next();
+  });
+});
 
 app.get('/api/units', async (req, res, next) => {
   try { const r = await pool.query(`SELECT b.id,b.name FROM business_units b JOIN user_units u ON u.unit_id=b.id WHERE u.user_id=$1 AND b.active ORDER BY b.name`, [req.session.user.id]); res.json(r.rows); }
@@ -219,8 +250,8 @@ app.get('/api/reports/saved',async(req,res,next)=>{try{const u=await routeUnit(r
 app.post('/api/reports/saved',allow('admin','owner','finance','operations'),async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const name=text(req.body.name,100),type=['sales','expenses','cash','dre','stock'].includes(req.body.report_type)?req.body.report_type:null;if(!name||!type)return fail(res,400,'Informe nome e tipo de relatório.');const row={id:id(),unit_id:u.id,owner_id:req.session.user.id,name,report_type:type,filters:req.body.filters&&typeof req.body.filters==='object'?req.body.filters:{}};await pool.query('INSERT INTO saved_reports(id,unit_id,owner_id,name,report_type,filters) VALUES($1,$2,$3,$4,$5,$6)',Object.values(row));await audit(pool,req,u.id,'create','saved_report',row.id,null,row);res.status(201).json(row);}catch(e){next(e);}});
 
 app.get('/api/audit',allow('admin','owner','auditor'),async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const r=await pool.query(`SELECT a.id,a.action,a.entity_type,a.entity_id,a.reason,a.before_data,a.after_data,a.created_at,u.name user_name FROM audit_log a LEFT JOIN users u ON u.id=a.user_id WHERE a.unit_id=$1 ORDER BY a.created_at DESC LIMIT 300`,[u.id]);res.json(r.rows);}catch(e){next(e);}});
-app.get('/api/admin/users',allow('admin'),async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const r=await pool.query(`SELECT u.id,u.name,u.email,u.role,u.active,u.created_at FROM users u JOIN user_units uu ON uu.user_id=u.id WHERE uu.unit_id=$1 ORDER BY u.name`,[u.id]);res.json(r.rows);}catch(e){next(e);}});
-app.post('/api/admin/users',allow('admin'),async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const d=req.body;const email=text(d.email,254).toLowerCase(),name=text(d.name,120),role=roles.includes(d.role)?d.role:null,password=String(d.password||'');if(!email.includes('@')||!name||!role||password.length<14)return fail(res,400,'Informe nome, e-mail, perfil e senha inicial com pelo menos 14 caracteres.');const hash=await bcrypt.hash(password,12);const user={id:id(),name,email,hash,role};await inTx(async c=>{await c.query('INSERT INTO users(id,name,email,password_hash,role) VALUES($1,$2,$3,$4,$5)',Object.values(user));await c.query('INSERT INTO user_units(user_id,unit_id) VALUES($1,$2)',[user.id,u.id]);await audit(c,req,u.id,'create','user',user.id,null,{name,email,role});});res.status(201).json({id:user.id,name,email,role});}catch(e){if(e.code==='23505')return fail(res,409,'Já existe usuário com este e-mail.');next(e);}});
+app.get('/api/admin/users',allow('admin'),async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const r=await pool.query(`SELECT u.id,u.name,u.email,u.role,u.active,u.must_change_password,u.created_at FROM users u JOIN user_units uu ON uu.user_id=u.id WHERE uu.unit_id=$1 ORDER BY u.name`,[u.id]);res.json(r.rows);}catch(e){next(e);}});
+app.post('/api/admin/users',allow('admin'),async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const d=req.body;const email=text(d.email,254).toLowerCase(),name=text(d.name,120),role=roles.includes(d.role)?d.role:null,password=String(d.password||'');if(!email.includes('@')||!name||!role||password.length<8||Buffer.byteLength(password,'utf8')>72)return fail(res,400,'Informe nome, e-mail, perfil e senha temporária com pelo menos 8 caracteres e até 72 bytes em UTF-8.');const hash=await bcrypt.hash(password,12);const user={id:id(),name,email,hash,role};await inTx(async c=>{await c.query('INSERT INTO users(id,name,email,password_hash,role,must_change_password) VALUES($1,$2,$3,$4,$5,true)',Object.values(user));await c.query('INSERT INTO user_units(user_id,unit_id) VALUES($1,$2)',[user.id,u.id]);await audit(c,req,u.id,'create','user',user.id,null,{name,email,role,must_change_password:true});});res.status(201).json({id:user.id,name,email,role,must_change_password:true});}catch(e){if(e.code==='23505')return fail(res,409,'Já existe usuário com este e-mail.');next(e);}});
 
 app.get('/api/settings',async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const r=await pool.query(`SELECT setting_key,setting_value,effective_from FROM app_settings WHERE unit_id=$1 ORDER BY effective_from DESC`,[u.id]);const result={};for(const row of r.rows)if(!(row.setting_key in result))result[row.setting_key]={value:row.setting_value,effective_from:row.effective_from};res.json(result);}catch(e){next(e);}});
 app.post('/api/settings',allow('admin','owner'),async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const target=parseMoney(req.body.purchase_target_percent);if(target===null||target<0||target>10000)return fail(res,400,'A meta percentual deve estar entre 0% e 100%.');const effective=validDate(req.body.effective_from)?req.body.effective_from:localToday();const setting={id:id(),unit_id:u.id,setting_key:'purchase_target_percent',setting_value:JSON.stringify(target/100),effective_from:effective,created_by:req.session.user.id};await pool.query(`INSERT INTO app_settings(id,unit_id,setting_key,setting_value,effective_from,created_by) VALUES($1,$2,$3,$4::jsonb,$5,$6) ON CONFLICT(unit_id,setting_key,effective_from) DO UPDATE SET setting_value=EXCLUDED.setting_value,created_by=EXCLUDED.created_by`,Object.values(setting));await audit(pool,req,u.id,'update','setting',setting.id,null,{purchase_target_percent:target/100,effective_from:effective});res.json({purchase_target_percent:target/100,effective_from:effective});}catch(e){next(e);}});
@@ -248,7 +279,7 @@ async function bootstrap() {
   await migrate();
   await pool.query(`INSERT INTO business_units(id,name) VALUES('villa-cruz','Villa Cruz') ON CONFLICT(id) DO NOTHING`);
   const count=await pool.query('SELECT count(*)::int n FROM users');
-  if(count.rows[0].n===0){const email=text(process.env.ADMIN_EMAIL,254).toLowerCase(),password=String(process.env.ADMIN_PASSWORD||'');if(!email.includes('@')||password.length<14)throw new Error('Banco sem usuários: configure ADMIN_EMAIL e ADMIN_PASSWORD (mínimo 14 caracteres) para criar o primeiro administrador.');const userId=id(),hash=await bcrypt.hash(password,12);await pool.query('INSERT INTO users(id,name,email,password_hash,role) VALUES($1,$2,$3,$4,$5)',[userId,'Administrador Villa Cruz',email,hash,'admin']);await pool.query("INSERT INTO user_units(user_id,unit_id) VALUES($1,'villa-cruz')",[userId]);console.log('Primeiro administrador criado a partir das variáveis de ambiente.');}
+  if(count.rows[0].n===0){const email=text(process.env.ADMIN_EMAIL,254).toLowerCase(),password=String(process.env.ADMIN_PASSWORD||'');if(!email.includes('@')||password.length<8)throw new Error('Banco sem usuários: configure ADMIN_EMAIL e ADMIN_PASSWORD (mínimo 8 caracteres para a senha temporária inicial).');const userId=id(),hash=await bcrypt.hash(password,12);await pool.query('INSERT INTO users(id,name,email,password_hash,role,must_change_password) VALUES($1,$2,$3,$4,$5,true)',[userId,'Administrador Villa Cruz',email,hash,'admin']);await pool.query("INSERT INTO user_units(user_id,unit_id) VALUES($1,'villa-cruz')",[userId]);console.log('Primeiro administrador criado; a troca da senha será exigida no primeiro acesso.');}
   const defaults=[['Faturamento','income',null],['Impostos e taxas','expense','deduction'],['CMV (regra pendente)','expense','cmv'],['Pessoal','expense','personnel'],['Operacional','expense','operating'],['Administrativa','expense','administrative'],['Ocupação','expense','occupancy'],['Financeira','expense','financial'],['Sem classificação','expense','other'],['Insumos','stock',null]];
   for(const [name,kind,group] of defaults)await pool.query(`INSERT INTO categories(id,unit_id,name,kind,dre_group) VALUES($1,'villa-cruz',$2,$3,$4) ON CONFLICT(unit_id,name,kind) DO NOTHING`,[id(),name,kind,group]);
   app.listen(port,'0.0.0.0',()=>console.log(`Villa Cruz Gestão disponível na porta ${port}`));

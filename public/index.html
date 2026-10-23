@@ -25,6 +25,23 @@
     </div>
   </section>
 
+  <section id="password-change-screen" class="login-screen" hidden>
+    <div class="login-card">
+      <div class="brand-mark">VC</div>
+      <p class="eyebrow">PRIMEIRO ACESSO</p>
+      <h1>Crie sua nova senha</h1>
+      <p class="muted">Troque a senha temporária antes de acessar o sistema. Use pelo menos 8 caracteres.</p>
+      <form id="password-change-form" class="form-stack">
+        <label>Senha atual<input name="current_password" type="password" autocomplete="current-password" required></label>
+        <label>Nova senha<input name="new_password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required></label>
+        <label>Confirme a nova senha<input name="confirm_password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required></label>
+        <button class="button primary full" type="submit">Salvar nova senha</button>
+        <p class="form-error" role="alert"></p>
+      </form>
+      <p class="login-foot">A senha temporária deixa de funcionar após a troca.</p>
+    </div>
+  </section>
+
   <div id="app-shell" class="app-shell" hidden>
     <aside id="sidebar" class="sidebar">
       <div class="brand"><div class="brand-mark small">VC</div><div><strong>Villa Cruz</strong><small>Gestão</small></div></div>

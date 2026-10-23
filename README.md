@@ -32,7 +32,7 @@ Ela ainda **não deve ser tratada como sistema financeiro pronto para produção
    npm start
    ```
 
-5. Acesse `http://localhost:3000`. O primeiro administrador só é criado quando o banco não tem usuários. Use uma senha exclusiva com pelo menos 14 caracteres; o sistema não possui senha padrão.
+5. Acesse `http://localhost:3000`. O primeiro administrador só é criado quando o banco não tem usuários. A conta inicial é marcada para troca obrigatória de senha; senhas novas devem ter pelo menos 8 caracteres. Nunca reutilize a senha temporária depois do primeiro acesso.
 
 As migrações em `migrations/` rodam no início do servidor. A migração 001 cria tabelas e índices; nenhuma planilha é importada automaticamente.
 
@@ -59,7 +59,7 @@ Se já houver um remoto, confira `git remote -v` e use-o em vez de adicionar out
    - `NODE_ENV=production`
    - `DATABASE_URL=${{Postgres.DATABASE_URL}}` (ajuste o nome do serviço PostgreSQL, se diferente)
    - `SESSION_SECRET` com um segredo aleatório novo, diferente do ambiente local
-   - `ADMIN_EMAIL` e `ADMIN_PASSWORD` com a conta inicial real; a senha deve ter pelo menos 14 caracteres
+   - `ADMIN_EMAIL` e `ADMIN_PASSWORD` com a conta inicial; ela só é criada se o banco estiver sem usuários e exige troca de senha no primeiro acesso
    - `UPLOAD_DIR=/app/data/uploads`
    - `APP_TIMEZONE=America/Sao_Paulo`
 
@@ -96,9 +96,10 @@ Referências operacionais: [Deployments Railway](https://docs.railway.com/deploy
 ## Dados e segurança
 
 - Senhas são armazenadas com bcrypt; sessões ficam no PostgreSQL, em cookie `HttpOnly`, `SameSite=Lax` e `Secure` quando servido em HTTPS.
+- A conta inicial e os usuários cadastrados pela administração precisam trocar a senha no primeiro acesso. O servidor exige 8 caracteres para a senha nova e bloqueia o restante da API até a troca.
 - Escritas exigem token CSRF; rotas de API validam sessão, função e pertencimento à unidade.
 - Anexos aceitam PDF/PNG/JPG, verificam a assinatura do arquivo e exigem sessão/permissão para leitura.
 - Valores monetários persistem em centavos inteiros. Não converta campo ausente, “X” ou fórmula inválida para zero durante a importação.
 - A trilha de auditoria é append-only na interface, mas um administrador de banco ainda pode alterá-la. Restrinja credenciais SQL.
-- MFA, recuperação de senha, gestão de unidade completa, fechamento contábil, backup executável dentro do app e alerta por e-mail ainda não estão implementados.
+- MFA, recuperação de senha, bloqueio/reativação de usuários na interface, gestão de unidade completa, fechamento contábil, backup executável dentro do app e alerta por e-mail ainda não estão implementados.
 

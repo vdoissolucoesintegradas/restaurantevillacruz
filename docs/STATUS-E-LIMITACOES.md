@@ -26,7 +26,8 @@ Os valores acima descrevem o material analisado anteriormente e **não são dado
 
 ## Limitações de segurança e operação
 
-- MFA, recuperação de senha, bloqueio/reativação de usuário na interface e permissões configuráveis não estão implementados.
+- Administrador inicial e usuários criados pelo administrador precisam trocar a senha no primeiro acesso. Senhas novas exigem pelo menos 8 caracteres, e o servidor bloqueia as rotas operacionais enquanto a troca estiver pendente.
+- MFA, recuperação de senha, bloqueio/reativação de usuário na interface e permissões configuráveis não estão implementados. A senha inicial escolhida pelo responsável é temporária e conhecida; substitua-a antes de liberar o endereço público a outras pessoas.
 - A pasta local estava sem arquivos do sistema e sem remoto Git configurado. Por isso, esta versão tem autenticação própria e ainda não reutiliza a identidade/login V2 do GitHub.
 - A auditoria não tem endpoint de edição/exclusão, mas ainda pode ser alterada com credenciais SQL administrativas.
 - Anexos são privados pela aplicação; em Railway, configure volume persistente em `/app/data/uploads`. Não há cópia de anexo no PostgreSQL.

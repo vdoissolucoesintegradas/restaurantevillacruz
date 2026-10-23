@@ -6,12 +6,12 @@
 - **Arquitetura:** aplicação única com API no servidor, PostgreSQL como fonte de verdade, sessão persistida no banco e arquivos anexos em armazenamento privado local/volume.
 - **Módulos presentes:** faturamento, lotes/estoque, despesas/notas, parcelas/pagamentos, caixa por turno, DRE preliminar, relatórios CSV/configurações salvas, importação XLSX para vendas/despesas/produtos, categorias/metas, usuários e auditoria.
 - **Unidade inicial:** Villa Cruz. O modelo separa registros por unidade; só Villa Cruz é criada na inicialização.
-- **Autenticação:** login próprio do app via sessão, bcrypt, CSRF, rate limit e funções fixas; usuário administrador inicial via variáveis de ambiente. Não está conectado ao login V2 externo.
+- **Autenticação:** login próprio do app via sessão, bcrypt, CSRF, rate limit e funções fixas; administrador inicial e novos usuários têm troca obrigatória de senha no primeiro acesso (mínimo de 8 caracteres). Não está conectado ao login V2 externo.
 - **Integrações:** sem PDV, iFood, bancos, OCR ou contabilidade.
 - **Deploy previsto:** GitHub → Railway Web + PostgreSQL + volume persistente para anexos.
 - **Fonte de referência:** arquivos Excel apontados no pedido anterior. Nenhum arquivo é importado automaticamente.
 - **Cálculo pendente crítico:** definição de CMV, relação entre consumo/cortesia/compras/estoque e parâmetros de taxas/impostos da DRE.
-- **Riscos:** falta de MFA e recuperação de senha; confirmação contábil pendente; importador ainda não reconcilia todos os módulos/abas; armazenamento de anexos exige volume; testes e exercício de restauração ainda não executados.
+- **Riscos:** falta de MFA, recuperação de senha e bloqueio/reativação de usuários na interface; confirmação contábil pendente; importador ainda não reconcilia todos os módulos/abas; armazenamento de anexos exige volume; testes e exercício de restauração ainda não executados.
 
 ## Roadmap
 
