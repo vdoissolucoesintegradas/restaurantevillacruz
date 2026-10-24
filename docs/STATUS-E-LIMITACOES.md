@@ -37,7 +37,7 @@ Os valores acima descrevem o material analisado anteriormente e **não são dado
 - Anexos são privados pela aplicação; em Railway, configure volume persistente em `/app/data/uploads`. Não há cópia de anexo no PostgreSQL.
 - Não existe rotina de backup/restore própria do aplicativo. Configure backups da plataforma e valide restauração antes de operar.
 - Importação XLSX aceita faturamento, despesas e produtos, uma aba por vez; não importa caixa, DRE, CMV, pagamentos ou anexos. Não faz reconciliação contábil completa nem detecta todas as duplicidades.
-- Relatórios personalizados guardam nome/fonte/filtros, mas os filtros salvos ainda não são aplicados a uma consulta customizada.
+- Relatórios permitem executar e salvar consultas com período, busca e status aplicável para faturamento, despesas, movimentos e fechamentos de caixa, posição e movimentações de estoque e linhas de origem da DRE; a exportação CSV usa a mesma consulta e os mesmos filtros. A execução limita a resposta a 5.000 linhas. Colunas customizadas, agrupamentos e fechamento contábil continuam fora desta entrega.
 - Não há envio de lembretes, OCR, aprovação de lançamentos, fechamento de mês nem integração com PDV/iFood/banco.
 - O sistema não substitui revisão contábil e não deve ser tratado como fonte fiscal.
 

@@ -4,8 +4,9 @@
 - **Estágio:** primeira versão funcional em construção; não liberada para produção financeira.
 - **Stack:** Node.js 24 LTS+, Express 5, PostgreSQL, HTML/CSS/JavaScript sem framework.
 - **Arquitetura:** aplicação única com API no servidor, PostgreSQL como fonte de verdade, sessão persistida no banco e arquivos anexos em armazenamento privado local/volume.
-- **Módulos presentes:** faturamento, lotes/estoque, despesas/notas, parcelas/pagamentos, caixa por turno, DRE preliminar, relatórios CSV/configurações salvas, importação XLSX para vendas/despesas/produtos, categorias/metas, usuários e auditoria.
+- **Módulos presentes:** faturamento, lotes/estoque, despesas/notas, parcelas/pagamentos, caixa por turno, DRE preliminar, relatórios executáveis e salvos com filtros e exportação CSV (incluindo fechamentos de caixa e movimentos de estoque), importação XLSX para vendas/despesas/produtos, categorias/metas, usuários e auditoria.
 - **UX presente:** painel inicial com alertas operacionais acionáveis para faturamento, caixa, despesas e estoque; identidade visual consistente com navegação escura e conteúdo claro. Diagnóstico das 20 melhorias em `ROADMAP-PRODUTO-E-UX.md`.
+- **Escopo de produto proposto:** evolução para gestão de restaurante com estoque rastreável, caixa por turno, DRE validada e relatórios executáveis; ver `ESCOPO-EVOLUCAO-GESTAO-RESTAURANTE.md` (aguarda validações do cliente/contabilidade).
 - **Unidade inicial:** Villa Cruz. O modelo separa registros por unidade; só Villa Cruz é criada na inicialização.
 - **Autenticação:** login próprio do app via sessão, bcrypt, CSRF, rate limit e funções fixas; administrador inicial e novos usuários têm troca obrigatória de senha no primeiro acesso (mínimo de 8 caracteres). Não está conectado ao login V2 externo.
 - **Integrações:** sem PDV, iFood, bancos, OCR ou contabilidade.

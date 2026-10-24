@@ -81,7 +81,7 @@ Referências operacionais: [Deployments Railway](https://docs.railway.com/deploy
 - **Pagamentos:** pagamento parcial ou total, método e responsável. Só impacta o livro do caixa reservado quando o usuário marca que saiu desse caixa; pagamentos da despesa continuam registrados por competência na DRE.
 - **Caixa reservado:** abertura de turno, entrada/saída, saldo esperado, valor contado, diferença e justificativa obrigatória.
 - **DRE:** receita confirmada por data de faturamento e despesas por competência; pagamentos não são somados novamente. O CMV é sinalizado como pendente de definição.
-- **Relatórios:** exportação CSV de faturamento/despesas e gravação de configurações de filtro.
+- **Relatórios:** consultas executáveis de faturamento, despesas, caixa, fechamentos de turno, posição e movimentações de estoque e linhas de origem da DRE; filtros por período, busca e status aplicável; configurações reexecutáveis e CSV coerente com a consulta. Limite de 5.000 linhas por execução.
 - **Excel:** prévia de uma aba XLSX e mapeamento para faturamento, despesa ou produto; rejeições aparecem no relatório de importação.
 - **Administração:** usuários e perfis, categorias, meta percentual por vigência e auditoria.
 
@@ -95,6 +95,7 @@ Referências operacionais: [Deployments Railway](https://docs.railway.com/deploy
 - `docs/DIRETRIZES-ENGENHARIA.md` — critérios para analisar e implementar melhorias com base na arquitetura real do repositório.
 - `docs/PROMPT-MELHORIAS-PRODUTO-E-UX.md` — prompt para evolução de funcionalidades e redesenho visual orientados a resultado.
 - `docs/ROADMAP-PRODUTO-E-UX.md` — estado confirmado das 20 melhorias, evidências e sequência de entrega.
+- `docs/ESCOPO-EVOLUCAO-GESTAO-RESTAURANTE.md` — escopo funcional proposto para estoque de restaurante, caixa, DRE e relatórios gerenciais.
 - `docs/adr/` — decisões de arquitetura e regras de dados.
 
 ## Dados e segurança
