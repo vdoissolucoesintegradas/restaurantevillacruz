@@ -127,6 +127,9 @@ input[type=checkbox],input[type=radio]{width:18px;height:18px;min-height:18px;pa
 .brand-settings-form .form-actions{justify-content:flex-start;flex-wrap:wrap;margin-top:0}
 @media(max-width:767px){.brand-settings-layout{grid-template-columns:1fr;gap:14px}.brand-settings-preview{min-height:124px}.brand-settings-preview img{height:100px}}
 
+/* Keep the full navigation reachable on short screens while pinning the user controls. */
+.sidebar #navigation{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(237,149,27,.45) transparent}
+
 /* Compact settings forms so their controls and actions use the available card width. */
 .settings-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .settings-target-form{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
@@ -138,3 +141,14 @@ input[type=checkbox],input[type=radio]{width:18px;height:18px;min-height:18px;pa
 @media(max-width:767px){.settings-target-form{grid-template-columns:repeat(2,minmax(0,1fr))}.settings-target-form>.settings-target-submit{grid-column:1/-1}.settings-category-form{grid-template-columns:repeat(2,minmax(0,1fr))}.settings-category-form>label:first-of-type{grid-column:1/-1}}
 @media(max-width:420px){.settings-target-form{grid-template-columns:1fr}.settings-target-form>.settings-target-submit{grid-column:1}.settings-category-form{grid-template-columns:1fr}.settings-category-form>.form-actions{grid-column:1}.settings-category-form>label:first-of-type{grid-column:1}}
 .settings-category-help{margin:12px 0 0;line-height:1.45}
+.import-template-card{border-color:#e7d6b5;background:linear-gradient(120deg,#fff 0%,#fffaf0 100%)}
+.import-template-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
+.import-template-head h2{margin-bottom:5px}
+.import-template-head p{margin:0;max-width:720px}
+.import-template-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.import-template-grid>div{min-width:0;padding:12px;border:1px solid #f0e5d0;border-radius:9px;background:rgba(255,255,255,.82)}
+.import-template-grid strong{color:#85530d;font:800 12px Manrope,sans-serif}
+.import-template-grid p{margin:7px 0 5px;color:#52605c;font-size:10px;line-height:1.5}
+.import-template-grid small{color:var(--muted);font-size:9px;line-height:1.45}
+@media(max-width:900px){.import-template-grid{grid-template-columns:1fr}}
+@media(max-width:767px){.import-template-head{align-items:stretch;flex-direction:column}.import-template-head .button{width:100%}}
