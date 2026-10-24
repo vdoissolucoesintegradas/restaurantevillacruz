@@ -19,9 +19,36 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL, options: '-c
 const roles = ['admin', 'owner', 'finance', 'operations', 'auditor'];
 const roleLabels = { admin: 'Administrador', owner: 'Proprietário/Gestor', finance: 'Financeiro', operations: 'Operação', auditor: 'Consulta/Auditoria' };
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: (Number(process.env.MAX_UPLOAD_MB) || 10) * 1024 * 1024, files: 1 } });
+const loginLogoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
+const loginLogoTypes = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
 
 function fail(res, status, message) { return res.status(status).json({ error: message }); }
 function id() { return crypto.randomUUID(); }
+function receiveLoginLogo(req, res, next) {
+  loginLogoUpload.single('file')(req, res, error => {
+    if (error instanceof multer.MulterError) return fail(res, 413, 'A logo deve ter no máximo 5 MB.');
+    if (error) return next(error);
+    next();
+  });
+}
+function brandingDir() { return path.join(path.resolve(process.env.UPLOAD_DIR || path.join(__dirname, 'data', 'uploads')), 'branding'); }
+async function readLoginLogo() {
+  const directory = brandingDir();
+  try {
+    const metadata = JSON.parse(await fs.readFile(path.join(directory, 'login-logo.json'), 'utf8'));
+    const extension = loginLogoTypes[metadata.mime_type];
+    if (!extension || !new RegExp(`^login-logo-[0-9a-f-]+\\.${extension}$`).test(metadata.file_name || '')) return null;
+    const filePath = path.join(directory, metadata.file_name);
+    await fs.access(filePath);
+    return { ...metadata, file_path: filePath };
+  } catch { return null; }
+}
+function detectLoginLogoType(buffer) {
+  if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return 'image/png';
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';
+  if (buffer.length >= 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP') return 'image/webp';
+  return null;
+}
 function parseMoney(value) {
   if (typeof value === 'number') return Number.isFinite(value) ? Math.round(value * 100) : null;
   if (value === null || value === undefined || String(value).trim() === '') return null;
@@ -97,6 +124,16 @@ function csrf(req, res, next) {
   next();
 }
 app.use('/api', csrf);
+app.get('/api/public/login-logo', async (req, res, next) => {
+  try {
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    const logo = await readLoginLogo();
+    if (logo) { res.type(logo.mime_type); return res.sendFile(logo.file_path); }
+    res.type('image/png');
+    res.sendFile(path.join(__dirname, 'public', 'villa-cruz-logo.png'));
+  } catch (e) { next(e); }
+});
 
 const authLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 12, standardHeaders: 'draft-7', legacyHeaders: false });
 app.get('/api/auth/csrf', (req, res) => { req.session.csrf ||= crypto.randomBytes(32).toString('hex'); res.json({ token: req.session.csrf }); });
@@ -280,6 +317,8 @@ app.post('/api/admin/users',allow('admin'),async(req,res,next)=>{try{const u=awa
 
 app.get('/api/settings',async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const r=await pool.query(`SELECT setting_key,setting_value,effective_from FROM app_settings WHERE unit_id=$1 ORDER BY effective_from DESC`,[u.id]);const result={};for(const row of r.rows)if(!(row.setting_key in result))result[row.setting_key]={value:row.setting_value,effective_from:row.effective_from};res.json(result);}catch(e){next(e);}});
 app.post('/api/settings',allow('admin','owner'),async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const target=parseMoney(req.body.purchase_target_percent);if(target===null||target<0||target>10000)return fail(res,400,'A meta percentual deve estar entre 0% e 100%.');const effective=validDate(req.body.effective_from)?req.body.effective_from:localToday();const setting={id:id(),unit_id:u.id,setting_key:'purchase_target_percent',setting_value:JSON.stringify(target/100),effective_from:effective,created_by:req.session.user.id};await pool.query(`INSERT INTO app_settings(id,unit_id,setting_key,setting_value,effective_from,created_by) VALUES($1,$2,$3,$4::jsonb,$5,$6) ON CONFLICT(unit_id,setting_key,effective_from) DO UPDATE SET setting_value=EXCLUDED.setting_value,created_by=EXCLUDED.created_by`,Object.values(setting));await audit(pool,req,u.id,'update','setting',setting.id,null,{purchase_target_percent:target/100,effective_from:effective});res.json({purchase_target_percent:target/100,effective_from:effective});}catch(e){next(e);}});
+app.post('/api/settings/login-logo',allow('admin','owner'),receiveLoginLogo,async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;if(!req.file)return fail(res,400,'Escolha uma imagem para a logo.');const mimeType=detectLoginLogoType(req.file.buffer),extension=loginLogoTypes[mimeType];if(!mimeType)return fail(res,415,'Envie uma imagem PNG, JPG ou WEBP válida.');const directory=brandingDir(),previous=await readLoginLogo(),fileName=`login-logo-${id()}.${extension}`,filePath=path.join(directory,fileName),metadataPath=path.join(directory,'login-logo.json'),tempMetadataPath=path.join(directory,`login-logo-${id()}.tmp`);await fs.mkdir(directory,{recursive:true});await fs.writeFile(filePath,req.file.buffer,{flag:'wx'});await fs.writeFile(tempMetadataPath,JSON.stringify({file_name:fileName,mime_type:mimeType}),{flag:'wx'});await fs.rename(tempMetadataPath,metadataPath);await audit(pool,req,u.id,'update','branding','login-logo',previous?{mime_type:previous.mime_type}:null,{mime_type:mimeType,size_bytes:req.file.size});if(previous)await fs.unlink(previous.file_path).catch(()=>{});res.json({ok:true,mime_type:mimeType});}catch(e){next(e);}});
+app.delete('/api/settings/login-logo',allow('admin','owner'),async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const previous=await readLoginLogo();await fs.unlink(path.join(brandingDir(),'login-logo.json')).catch(e=>{if(e.code!=='ENOENT')throw e;});if(previous)await fs.unlink(previous.file_path).catch(()=>{});if(previous)await audit(pool,req,u.id,'delete','branding','login-logo',{mime_type:previous.mime_type},null);res.json({ok:true,custom:false});}catch(e){next(e);}});
 
 app.post('/api/import/preview',allow('admin','owner','finance'),upload.single('file'),async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;if(!req.file)return fail(res,400,'Escolha uma planilha XLSX.');if(!req.file.originalname.toLowerCase().endsWith('.xlsx'))return fail(res,400,'Somente arquivos .xlsx são aceitos nesta versão.');const kind=['sales','expenses','products'].includes(req.body.import_type)?req.body.import_type:null;if(!kind)return fail(res,400,'Escolha o tipo de importação.');const wb=new ExcelJS.Workbook();await wb.xlsx.load(req.file.buffer);const sheetName=text(req.body.sheet_name||wb.worksheets[0]?.name,120);const sheet=wb.getWorksheet(sheetName);if(!sheet)return fail(res,400,'A aba escolhida não existe.');if(sheet.rowCount>10001)return fail(res,413,'A aba excede o limite de 10.000 linhas.');const headers=sheet.getRow(1).values.slice(1).map((_,i)=>text(sheet.getRow(1).getCell(i+1).text,200));const mappedHeaders=headers.map((h,i)=>h||`Coluna ${i+1}`);const rows=[];for(let n=2;n<=sheet.rowCount;n++){const row={};let hasData=false;for(let i=0;i<mappedHeaders.length;i++){const value=sheet.getRow(n).getCell(i+1).text;row[mappedHeaders[i]]=value===''?null:value;if(value!=='')hasData=true;}if(hasData)rows.push(row);}if(!mappedHeaders.length||!rows.length)return fail(res,400,'A aba precisa ter cabeçalho e linhas de dados para pré-visualizar.');const batch={id:id(),unit_id:u.id,user_id:req.session.user.id,source_name:path.basename(req.file.originalname).slice(0,200),sheet_name:sheetName,import_type:kind,headers:JSON.stringify(mappedHeaders),rows_data:JSON.stringify(rows)};await pool.query(`INSERT INTO import_batches(id,unit_id,user_id,source_name,sheet_name,import_type,headers,rows_data) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb)`,Object.values(batch));await audit(pool,req,u.id,'preview','import_batch',batch.id,null,{source_name:batch.source_name,sheet:sheetName,kind,rows:rows.length});res.status(201).json({id:batch.id,source_name:batch.source_name,sheet:sheetName,kind,headers:mappedHeaders,rows:rows.slice(0,15),total_rows:rows.length});}catch(e){if(e instanceof multer.MulterError)return fail(res,413,'Arquivo muito grande.');next(e);}});
 app.post('/api/import/:id/commit',allow('admin','owner','finance'),async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const result=await inTx(async c=>{const b=await c.query('SELECT * FROM import_batches WHERE id=$1 AND unit_id=$2 AND user_id=$3 AND status=$4 FOR UPDATE',[req.params.id,u.id,req.session.user.id,'draft']);if(!b.rowCount)return {error:'Rascunho de importação não encontrado ou já processado.'};const mapping=req.body.mapping||{};const rows=b.rows[0].rows_data;let imported=0;const rejected=[];for(let i=0;i<rows.length;i++){const src=rows[i];const get=k=>src[mapping[k]];await c.query('SAVEPOINT import_row');try{if(b.rows[0].import_type==='sales'){const amount=parseMoney(get('amount')),date=normalizeDate(get('sale_date'));if(amount===null||!date)throw Error('data ou valor inválido');await c.query('INSERT INTO sales(id,unit_id,sale_date,channel,amount_cents,target_cents,notes,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[id(),u.id,date,text(get('channel')||'Importado',80),amount,parseMoney(get('target')),text(get('notes'),1000),req.session.user.id]);}
@@ -294,7 +333,7 @@ app.get('/api/attachments/:id',async(req,res,next)=>{try{const u=await routeUnit
 
 app.get('/healthz',async(req,res)=>{try{await pool.query('SELECT 1');res.json({ok:true});}catch{res.status(503).json({ok:false});}});
 
-app.use(express.static(path.join(__dirname,'public'),{index:'index.html',maxAge:isProd?'1h':0}));
+app.use(express.static(path.join(__dirname,'public'),{index:'index.html',maxAge:isProd?'1h':0,setHeaders:(res,filePath)=>{if(path.extname(filePath)==='.html')res.setHeader('Cache-Control','no-cache, must-revalidate');}}));
 app.get('/{*path}',(req,res,next)=>{if(req.path.startsWith('/api/'))return fail(res,404,'Rota não encontrada.');res.sendFile(path.join(__dirname,'public','index.html'),e=>e&&next(e));});
 app.use((err,req,res,next)=>{console.error(JSON.stringify({level:'error',request_id:req.id,message:err.message,code:err.code}));if(res.headersSent)return next(err);const status=err.status||500;res.status(status).json({error:status>=500?'Erro interno. Informe o código de atendimento.':err.message,request_id:req.id});});
 
