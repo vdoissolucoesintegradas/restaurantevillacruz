@@ -4,6 +4,10 @@
 
 O repositório contém uma aplicação integrada com cadastro e consulta dos módulos principais. A configuração de produção requer PostgreSQL, segredo de sessão, usuário administrador inicial e volume persistente de anexos. A migração começa com uma base vazia; não transfere nem modifica as planilhas locais.
 
+- A visão geral apresenta alertas acionáveis para faturamento do dia, estado do caixa (conforme visibilidade do perfil), contas a vencer/vencidas e condições de estoque. Os destinos são os módulos existentes; o painel não altera registros automaticamente.
+- As telas usam tokens visuais compartilhados, navegação escura e superfícies claras. Isso é uma atualização de apresentação e não altera regras ou dados.
+- A lista de despesas mostra o saldo pendente (total menos pagamentos registrados), resume quantidade vencida/próxima e não oferece ação de pagamento para despesas quitadas ou canceladas. O detalhamento por parcela ainda não está disponível na lista.
+
 ## O que precisa de validação antes dos dados oficiais
 
 - **CMV:** não consolidar automaticamente compras, consumo, cortesias e baixa de estoque. A regra empresarial/contábil ainda precisa ser confirmada.

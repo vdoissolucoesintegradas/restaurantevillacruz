@@ -5,13 +5,15 @@
 - **Stack:** Node.js 24 LTS+, Express 5, PostgreSQL, HTML/CSS/JavaScript sem framework.
 - **Arquitetura:** aplicação única com API no servidor, PostgreSQL como fonte de verdade, sessão persistida no banco e arquivos anexos em armazenamento privado local/volume.
 - **Módulos presentes:** faturamento, lotes/estoque, despesas/notas, parcelas/pagamentos, caixa por turno, DRE preliminar, relatórios CSV/configurações salvas, importação XLSX para vendas/despesas/produtos, categorias/metas, usuários e auditoria.
+- **UX presente:** painel inicial com alertas operacionais acionáveis para faturamento, caixa, despesas e estoque; identidade visual consistente com navegação escura e conteúdo claro. Diagnóstico das 20 melhorias em `ROADMAP-PRODUTO-E-UX.md`.
 - **Unidade inicial:** Villa Cruz. O modelo separa registros por unidade; só Villa Cruz é criada na inicialização.
 - **Autenticação:** login próprio do app via sessão, bcrypt, CSRF, rate limit e funções fixas; administrador inicial e novos usuários têm troca obrigatória de senha no primeiro acesso (mínimo de 8 caracteres). Não está conectado ao login V2 externo.
 - **Integrações:** sem PDV, iFood, bancos, OCR ou contabilidade.
 - **Deploy previsto:** GitHub → Railway Web + PostgreSQL + volume persistente para anexos.
 - **Fonte de referência:** arquivos Excel apontados no pedido anterior. Nenhum arquivo é importado automaticamente.
 - **Cálculo pendente crítico:** definição de CMV, relação entre consumo/cortesia/compras/estoque e parâmetros de taxas/impostos da DRE.
-- **Riscos:** falta de MFA, recuperação de senha e bloqueio/reativação de usuários na interface; confirmação contábil pendente; importador ainda não reconcilia todos os módulos/abas; armazenamento de anexos exige volume; testes e exercício de restauração ainda não executados.
+- **Riscos:** falta de MFA, recuperação de senha e bloqueio/reativação de usuários na interface; confirmação contábil pendente; importador ainda não reconcilia todos os módulos/abas; armazenamento de anexos exige volume; testes integrados com PostgreSQL e exercício de restauração ainda não executados. Smoke tests de UI cobrem o painel e saldos de despesas.
+- **Diretrizes para evolução:** consulte [Diretrizes de engenharia](DIRETRIZES-ENGENHARIA.md) antes de propor ou implementar melhorias. Confirme no código cada rota, tabela, regra e módulo; itens de roadmap não representam funcionalidades existentes.
 
 ## Roadmap
 

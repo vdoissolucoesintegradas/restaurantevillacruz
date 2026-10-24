@@ -33,6 +33,7 @@ Ela ainda **não deve ser tratada como sistema financeiro pronto para produção
    ```
 
 5. Acesse `http://localhost:3000`. O primeiro administrador só é criado quando o banco não tem usuários. A conta inicial é marcada para troca obrigatória de senha; senhas novas devem ter pelo menos 8 caracteres. Nunca reutilize a senha temporária depois do primeiro acesso.
+6. Execute os testes automatizados de interface com `npm test`. A suíte usa respostas simuladas e não substitui validação integrada com PostgreSQL.
 
 As migrações em `migrations/` rodam no início do servidor. A migração 001 cria tabelas e índices; nenhuma planilha é importada automaticamente.
 
@@ -91,6 +92,9 @@ Referências operacionais: [Deployments Railway](https://docs.railway.com/deploy
 - `public/` — interface responsiva.
 - `docs/PROJECT-SNAPSHOT.md` — contexto atual do projeto.
 - `docs/STATUS-E-LIMITACOES.md` — funcionalidades, regras ainda pendentes e risco operacional.
+- `docs/DIRETRIZES-ENGENHARIA.md` — critérios para analisar e implementar melhorias com base na arquitetura real do repositório.
+- `docs/PROMPT-MELHORIAS-PRODUTO-E-UX.md` — prompt para evolução de funcionalidades e redesenho visual orientados a resultado.
+- `docs/ROADMAP-PRODUTO-E-UX.md` — estado confirmado das 20 melhorias, evidências e sequência de entrega.
 - `docs/adr/` — decisões de arquitetura e regras de dados.
 
 ## Dados e segurança
