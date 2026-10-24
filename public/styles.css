@@ -19,3 +19,49 @@ th{font-size:10px;color:#6d817d;background:#f7faf9;padding:11px 14px}td{font-siz
 @media(max-width:767px){.sidebar{background:#102e32}.mobile-header{background:#102e32;color:#fff;border:0;box-shadow:0 3px 12px rgba(13,35,37,.14)}.mobile-header .brand-mark{background:#1a777a}.page-wrap{padding-top:18px}.page-heading h1{font-size:23px}.kpi-card{min-height:108px}.table-wrap{border-radius:0}.alert-row{min-height:56px}.button{min-height:42px}}
 .due-summary{margin:0 0 14px}
 .read-only .form-card,.read-only [data-action]{display:none!important}.operations-user .form-card:has(#expense-form),.operations-user .form-card:has(#cash-open-form),.operations-user .form-card:has(#cash-close-form){display:none!important}.operations-user [data-action="pay-expense"]{display:none!important}
+
+/* Identidade Villa Cruz: carvão, branco e dourado da marca. */
+:root{--ink:#252927;--muted:#747b77;--line:#e4e5e2;--paper:#f5f4f0;--card:#fff;--brand:#171a19;--brand2:#ed951b;--soft:#faeedc;--shadow:0 6px 24px rgba(24,27,25,.07)}
+body{background:var(--paper);color:var(--ink)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline-color:#ed951b}
+.sidebar{background:#141716;border-color:#303633;color:#f5f5f2}
+.brand{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:0 0 18px}
+.brand-logo-sidebar{display:block;width:100%;height:71px;object-fit:cover;object-position:center;border-radius:6px;background:#171a19}
+.brand-caption{display:block;margin-top:5px;color:#ed951b;text-align:center;font-size:9px;font-weight:800;letter-spacing:3px}
+.unit-badge{background:#1d2220;border-color:#383e3b;color:#e0e3e0}
+.nav-label{color:#969e99}
+.nav-item{color:#c4cbc6}
+.nav-item:hover{background:#252b28;color:#fff}
+.nav-item.active{background:rgba(237,149,27,.16);box-shadow:inset 3px 0 #ed951b;color:#fff}
+.nav-icon{color:#9aa39e}
+.nav-item.active .nav-icon{color:#ed951b}
+.profile{border-color:#303633}
+.avatar{background:#33291c;color:#f5b34f}
+.icon-button{color:#d0d5d1}
+.icon-button:hover{background:#2a302d;color:#fff}
+.version-label{color:#89928d}
+.page-heading h1,.kpi-value{color:#252927}
+.section-head h2,.table-toolbar h2,.form-card h2,.alert-row strong{color:#292d2a}
+.alert-count,.alert-arrow{color:#8f560c}
+.actionable-alert:hover{background:#fff9f0;border-color:#edc58f}
+.actionable-alert:focus-visible{outline-color:#ed951b}
+.dre-total{background:#f7f6f2}
+.modal-backdrop{background:rgba(16,18,17,.56)}
+.toast{background:#202321}
+.button.primary{background:#ed951b;color:#171a19}
+.button.primary:hover{background:#d9810c;color:#111413}
+.button.secondary{border-color:#d6d8d4;color:#343a36;background:#fff}
+.button.secondary:hover{background:#f6eee2;border-color:#e8bd7f}
+.text-link,.file-link{color:#a95d00}
+.kpi-icon{background:#faeedc;color:#a95d00}
+.progress-fill{background:#ed951b}
+.spinner{border-top-color:#ed951b}
+.login-screen{background:radial-gradient(ellipse at top right,#f7e7cf,transparent 52%),var(--paper)}
+.login-card{border-color:#e2e0da;box-shadow:0 18px 55px rgba(26,30,27,.12)}
+.brand-logo-login{display:block;width:100%;height:118px;object-fit:cover;object-position:center;margin:0 0 22px;border-radius:8px;background:#171a19}
+.eyebrow{color:#a95d00}
+.mobile-header{background:#141716;color:#fff;border-color:#303633;box-shadow:0 3px 12px rgba(13,16,14,.18)}
+.mobile-header .icon-button{color:#f1f2ef}
+.mobile-header .icon-button:hover{background:#2a302d}
+.brand-logo-mobile{display:block;flex:1;min-width:0;width:132px;height:44px;object-fit:cover;object-position:center;border-radius:5px;background:#171a19}
+@media(max-width:767px){.sidebar{background:#141716}.mobile-header{background:#141716}.brand-logo-sidebar{height:82px}.brand-logo-login{height:108px}}

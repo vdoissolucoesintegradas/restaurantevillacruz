@@ -3,15 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#183c40">
+  <meta name="theme-color" content="#141716">
   <title>Villa Cruz · Gestão</title>
+  <link rel="icon" type="image/png" href="/villa-cruz-logo.png">
   <link rel="stylesheet" href="/styles.css">
   <script src="/app.js" defer></script>
 </head>
 <body>
   <section id="login-screen" class="login-screen" hidden>
     <div class="login-card">
-      <div class="brand-mark">VC</div>
+      <img class="brand-logo-login" src="/villa-cruz-logo.png" alt="Villa Cruz Restaurante">
       <p class="eyebrow">GESTÃO FINANCEIRA E OPERACIONAL</p>
       <h1>Villa Cruz</h1>
       <p class="muted">Acesse sua área de gestão.</p>
@@ -27,7 +28,7 @@
 
   <section id="password-change-screen" class="login-screen" hidden>
     <div class="login-card">
-      <div class="brand-mark">VC</div>
+      <img class="brand-logo-login" src="/villa-cruz-logo.png" alt="Villa Cruz Restaurante">
       <p class="eyebrow">PRIMEIRO ACESSO</p>
       <h1>Crie sua nova senha</h1>
       <p class="muted">Troque a senha temporária antes de acessar o sistema. Use pelo menos 8 caracteres.</p>
@@ -44,7 +45,7 @@
 
   <div id="app-shell" class="app-shell" hidden>
     <aside id="sidebar" class="sidebar">
-      <div class="brand"><div class="brand-mark small">VC</div><div><strong>Villa Cruz</strong><small>Gestão</small></div></div>
+      <div class="brand"><img class="brand-logo-sidebar" src="/villa-cruz-logo.png" alt="Villa Cruz Restaurante"><span class="brand-caption">GESTÃO</span></div>
       <div class="unit-badge"><span class="status-dot"></span><span id="unit-name">Villa Cruz</span></div>
       <nav id="navigation" aria-label="Navegação principal">
         <p class="nav-label">OPERAÇÃO</p>
@@ -69,7 +70,7 @@
     </aside>
 
     <main class="main-content">
-      <header class="mobile-header"><button id="menu-toggle" class="icon-button" aria-label="Abrir menu">☰</button><div class="brand-mark small">VC</div><strong>Villa Cruz</strong><button id="mobile-logout" class="icon-button" aria-label="Sair">↪</button></header>
+      <header class="mobile-header"><button id="menu-toggle" class="icon-button" aria-label="Abrir menu">☰</button><img class="brand-logo-mobile" src="/villa-cruz-logo.png" alt="Villa Cruz Restaurante"><button id="mobile-logout" class="icon-button" aria-label="Sair">↪</button></header>
       <div class="page-wrap">
         <div class="page-topline"><span>Villa Cruz</span><span class="crumb-sep">/</span><span id="breadcrumb">Visão geral</span><span id="today-label" class="today-label"></span></div>
         <div id="page-content" aria-live="polite"><div class="loading-state"><span class="spinner"></span>Carregando...</div></div>
