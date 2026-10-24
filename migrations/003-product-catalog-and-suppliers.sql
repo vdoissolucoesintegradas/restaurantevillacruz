@@ -53,30 +53,3 @@ ALTER TABLE products ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DE
 ALTER TABLE stock_lots ADD COLUMN IF NOT EXISTS supplier_id text REFERENCES suppliers(id);
 CREATE INDEX IF NOT EXISTS products_unit_updated_idx ON products(unit_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS products_supplier_idx ON products(supplier_id);
-)
-);
-CREATE UNIQUE INDEX IF NOT EXISTS suppliers_unit_cnpj_unique
-  ON suppliers(unit_id, cnpj) WHERE cnpj IS NOT NULL;
-CREATE INDEX IF NOT EXISTS suppliers_unit_name_idx ON suppliers(unit_id, name);
-
-CREATE TABLE IF NOT EXISTS product_catalog_options (
-  id text PRIMARY KEY,
-  unit_id text NOT NULL REFERENCES business_units(id),
-  kind text NOT NULL CHECK (kind IN ('item_type','expiry_alert')),
-  value text NOT NULL,
-  label text NOT NULL,
-  created_by text NOT NULL REFERENCES users(id),
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(unit_id, kind, value)
-);
-
-ALTER TABLE products ADD COLUMN IF NOT EXISTS item_type text NOT NULL DEFAULT 'Ingrediente';
-ALTER TABLE products ADD COLUMN IF NOT EXISTS purchase_unit text NOT NULL DEFAULT 'unidade';
-ALTER TABLE products ADD COLUMN IF NOT EXISTS expiry_alert_days integer NOT NULL DEFAULT 7 CHECK (expiry_alert_days BETWEEN 0 AND 3650);
-ALTER TABLE products ADD COLUMN IF NOT EXISTS description text;
-ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_id text REFERENCES suppliers(id);
-ALTER TABLE products ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
-
-ALTER TABLE stock_lots ADD COLUMN IF NOT EXISTS supplier_id text REFERENCES suppliers(id);
-CREATE INDEX IF NOT EXISTS products_unit_updated_idx ON products(unit_id, updated_at DESC);
-CREATE INDEX IF NOT EXISTS products_supplier_idx ON products(supplier_id);
