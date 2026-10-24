@@ -6,6 +6,7 @@ O repositório contém uma aplicação integrada com cadastro e consulta dos mó
 
 - A visão geral apresenta alertas acionáveis para faturamento do dia, estado do caixa (conforme visibilidade do perfil), contas a vencer/vencidas e condições de estoque. Os destinos são os módulos existentes; o painel não altera registros automaticamente.
 - As telas usam tokens visuais compartilhados, navegação escura e superfícies claras. Isso é uma atualização de apresentação e não altera regras ou dados.
+- O cadastro de fornecedores permite configurar por unidade quais campos complementares aparecem; nome e CNPJ continuam fixos. CNAE/atividade principal e capital social começam ocultos. O cadastro também guarda e lista um contato de referência (nome, cargo, telefone e e-mail).
 - A lista de despesas mostra o saldo pendente (total menos pagamentos registrados), resume quantidade vencida/próxima e não oferece ação de pagamento para despesas quitadas ou canceladas. O detalhamento por parcela ainda não está disponível na lista.
 
 ## O que precisa de validação antes dos dados oficiais
