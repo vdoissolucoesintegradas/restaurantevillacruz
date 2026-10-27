@@ -4,7 +4,7 @@
 - **Estágio:** primeira versão funcional em construção; não liberada para produção financeira.
 - **Stack:** Node.js 24 LTS+, Express 5, PostgreSQL, HTML/CSS/JavaScript sem framework.
 - **Arquitetura:** aplicação única com API no servidor, PostgreSQL como fonte de verdade, sessão persistida no banco e arquivos anexos em armazenamento privado local/volume.
-- **Módulos presentes:** faturamento, lotes/estoque, pedidos de compra e recebimentos parciais, despesas recorrentes em rascunho, parcelas/pagamentos, caixa por turno, central de anexos, histórico de importação, DRE preliminar, relatórios executáveis e salvos com exportação CSV, categorias/metas, usuários e auditoria.
+- **Módulos presentes:** faturamento, fluxo financeiro (contas bancárias, depósitos, saques, transferências e estornos), lotes/estoque, pedidos de compra e recebimentos parciais, despesas recorrentes em rascunho, parcelas/pagamentos, caixa por turno, central de anexos, histórico de importação, DRE preliminar, relatórios executáveis e salvos com exportação CSV, categorias/metas, usuários e auditoria.
 - **UX presente:** Visão geral com cartões personalizáveis, reordenação por arraste/setas, filtro mensal, escalas de gráfico adaptáveis e alertas operacionais; identidade visual consistente com navegação escura e conteúdo claro. Diagnóstico das 20 melhorias em `ROADMAP-PRODUTO-E-UX.md`.
 - **Escopo de produto proposto:** evolução para gestão de restaurante com estoque rastreável, caixa por turno, DRE validada e relatórios executáveis; ver `ESCOPO-EVOLUCAO-GESTAO-RESTAURANTE.md` (aguarda validações do cliente/contabilidade).
 - **Unidade inicial:** Villa Cruz. O modelo separa registros por unidade; só Villa Cruz é criada na inicialização.

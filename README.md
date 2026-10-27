@@ -84,6 +84,7 @@ Referências operacionais: [Deployments Railway](https://docs.railway.com/deploy
 - **Recorrências e documentos:** modelos de despesa mensal/trimestral/anual geram rascunhos para revisão; central de anexos e histórico de importações permitem localizar registros e rejeições.
 - **Pagamentos:** pagamento parcial ou total, método e responsável. Só impacta o livro do caixa reservado quando o usuário marca que saiu desse caixa; pagamentos da despesa continuam registrados por competência na DRE.
 - **Caixa reservado:** abertura de turno, entrada/saída, saldo esperado, valor contado, diferença e justificativa obrigatória.
+- **Fluxo financeiro:** contas bancárias, depósitos do caixa no banco, saques para o caixa, transferências entre contas, recebimentos e tarifas, estorno com histórico, pagamento de despesa por conta bancária, projeção após contas a pagar e relatório CSV. Regras em [docs/FLUXO-FINANCEIRO.md](docs/FLUXO-FINANCEIRO.md).
 - **DRE:** receita confirmada por data de faturamento e despesas por competência; pagamentos não são somados novamente. O CMV é sinalizado como pendente de definição.
 - **Relatórios:** consultas executáveis de faturamento, despesas, caixa, fechamentos de turno, posição e movimentações de estoque e linhas de origem da DRE; filtros por período, busca e status aplicável; configurações reexecutáveis e CSV coerente com a consulta. Limite de 5.000 linhas por execução.
 - **Excel:** prévia de uma aba XLSX e mapeamento para faturamento, despesa ou produto; rejeições aparecem no relatório de importação.
