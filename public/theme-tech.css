@@ -194,3 +194,14 @@ td.money,.money{font-variant-numeric:tabular-nums;font-weight:700}
 @media(max-width:767px){.pbi-split{grid-template-columns:minmax(0,1fr);gap:12px}.kpi-card{min-height:116px;padding:14px 15px}.kpi-ring{width:44px;height:44px;right:14px;bottom:12px}.page-heading h1::after{margin-top:7px}}
 @media(max-width:480px){.flow-kpis{grid-template-columns:minmax(0,1fr)}.flow-filter{grid-template-columns:minmax(0,1fr)}.flow-payables{grid-template-columns:minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* Carga das planilhas (Importar Excel) */
+.legacy-import-card .help-text{margin:4px 0 16px}
+.import-summary{margin-top:20px;padding-top:18px;border-top:1px solid var(--line);min-width:0}
+.import-summary h3{margin:0 0 12px;font-size:15px}
+.import-totals{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:10px}
+.import-totals li{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--soft);font-size:13px;line-height:1.5;min-width:0;overflow-wrap:anywhere}
+.import-warnings{margin:14px 0;border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:12px;min-width:0}
+.import-warnings summary{cursor:pointer;font-weight:600}
+.import-warnings ul{margin:10px 0 0;padding-left:18px;display:grid;gap:6px;max-height:260px;overflow:auto;overflow-wrap:anywhere}
+.import-summary .form-actions{margin-top:16px}

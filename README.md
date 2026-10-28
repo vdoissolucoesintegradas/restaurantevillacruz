@@ -87,7 +87,7 @@ Referências operacionais: [Deployments Railway](https://docs.railway.com/deploy
 - **Fluxo financeiro:** contas bancárias, depósitos do caixa no banco, saques para o caixa, transferências entre contas, recebimentos e tarifas, estorno com histórico, pagamento de despesa por conta bancária, projeção após contas a pagar e relatório CSV. Regras em [docs/FLUXO-FINANCEIRO.md](docs/FLUXO-FINANCEIRO.md).
 - **DRE:** receita confirmada por data de faturamento e despesas por competência; pagamentos não são somados novamente. O CMV é sinalizado como pendente de definição.
 - **Relatórios:** consultas executáveis de faturamento, despesas, caixa, fechamentos de turno, posição e movimentações de estoque e linhas de origem da DRE; filtros por período, busca e status aplicável; configurações reexecutáveis e CSV coerente com a consulta. Limite de 5.000 linhas por execução.
-- **Excel:** prévia de uma aba XLSX e mapeamento para faturamento, despesa ou produto; rejeições aparecem no relatório de importação.
+- **Excel:** prévia de uma aba XLSX e mapeamento para faturamento, despesa ou produto; rejeições aparecem no relatório de importação. A **carga das planilhas do Villa Cruz** (caixa, notas fiscais, CMV e DRE) lê várias abas de uma vez, mostra a prévia e só grava após confirmação; ver `docs/CARGA-PLANILHAS.md`.
 - **Administração:** usuários e perfis com desativação/reativação, categorias, meta percentual por vigência, configurações de alertas de caixa e auditoria com filtros.
 
 ## Arquivos importantes

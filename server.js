@@ -20,6 +20,8 @@ let dummyPasswordHash;
 const roles = ['admin', 'owner', 'finance', 'operations', 'auditor'];
 const roleLabels = { admin: 'Administrador', owner: 'Proprietário/Gestor', finance: 'Financeiro', operations: 'Operação', auditor: 'Consulta/Auditoria' };
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: (Number(process.env.MAX_UPLOAD_MB) || 10) * 1024 * 1024, files: 1 } });
+const legacyUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: (Number(process.env.MAX_UPLOAD_MB) || 10) * 1024 * 1024, files: 6 } });
+const { parseLegacyWorkbooks, settleInstallment } = require('./legacy-import');
 const loginLogoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 const loginLogoTypes = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
 
@@ -723,6 +725,111 @@ app.post('/api/settings/login-logo',allow('admin','owner'),receiveLoginLogo,asyn
 app.delete('/api/settings/login-logo',allow('admin','owner'),async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const previous=await readLoginLogo();await fs.unlink(path.join(brandingDir(),'login-logo.json')).catch(e=>{if(e.code!=='ENOENT')throw e;});if(previous)await fs.unlink(previous.file_path).catch(()=>{});if(previous)await audit(pool,req,u.id,'delete','branding','login-logo',{mime_type:previous.mime_type},null);res.json({ok:true,custom:false});}catch(e){next(e);}});
 
 app.post('/api/import/preview',allow('admin','owner','finance'),upload.single('file'),async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;if(!req.file)return fail(res,400,'Escolha uma planilha XLSX.');if(!req.file.originalname.toLowerCase().endsWith('.xlsx'))return fail(res,400,'Somente arquivos .xlsx são aceitos nesta versão.');const kind=['sales','expenses','products'].includes(req.body.import_type)?req.body.import_type:null;if(!kind)return fail(res,400,'Escolha o tipo de importação.');const wb=new ExcelJS.Workbook();await wb.xlsx.load(req.file.buffer);const sheetName=text(req.body.sheet_name||wb.worksheets[0]?.name,120);const sheet=wb.getWorksheet(sheetName);if(!sheet)return fail(res,400,'A aba escolhida não existe.');if(sheet.rowCount>10001)return fail(res,413,'A aba excede o limite de 10.000 linhas.');const headers=sheet.getRow(1).values.slice(1).map((_,i)=>text(sheet.getRow(1).getCell(i+1).text,200));const mappedHeaders=headers.map((h,i)=>h||`Coluna ${i+1}`);const rows=[];for(let n=2;n<=sheet.rowCount;n++){const row={};let hasData=false;for(let i=0;i<mappedHeaders.length;i++){const value=sheet.getRow(n).getCell(i+1).text;row[mappedHeaders[i]]=value===''?null:value;if(value!=='')hasData=true;}if(hasData)rows.push(row);}if(!mappedHeaders.length||!rows.length)return fail(res,400,'A aba precisa ter cabeçalho e linhas de dados para pré-visualizar.');const batch={id:id(),unit_id:u.id,user_id:req.session.user.id,source_name:path.basename(req.file.originalname).slice(0,200),sheet_name:sheetName,import_type:kind,headers:JSON.stringify(mappedHeaders),rows_data:JSON.stringify(rows)};await pool.query(`INSERT INTO import_batches(id,unit_id,user_id,source_name,sheet_name,import_type,headers,rows_data) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb)`,Object.values(batch));await audit(pool,req,u.id,'preview','import_batch',batch.id,null,{source_name:batch.source_name,sheet:sheetName,kind,rows:rows.length});res.status(201).json({id:batch.id,source_name:batch.source_name,sheet:sheetName,kind,headers:mappedHeaders,rows:rows.slice(0,15),total_rows:rows.length});}catch(e){if(e instanceof multer.MulterError)return fail(res,413,'Arquivo muito grande.');next(e);}});
+// Carga das planilhas históricas (caixa, notas fiscais, CMV e DRE). Registradas antes de /api/import/:id/* para não casarem com :id.
+const legacySettlements = ['past_paid', 'all_open', 'all_paid'];
+async function legacyLoad(req, res) {
+  const u = await routeUnit(req, res); if (!u) return null;
+  const files = (req.files || []).filter(f => f.originalname.toLowerCase().endsWith('.xlsx'));
+  if (!files.length) { fail(res, 400, 'Escolha ao menos uma planilha XLSX.'); return null; }
+  const plan = await parseLegacyWorkbooks(files.map(f => ({ name: path.basename(f.originalname).slice(0, 200), buffer: f.buffer })));
+  if (!plan.files.length) { fail(res, 400, 'Não reconheci aba de caixa, notas fiscais, CMV ou DRE nesses arquivos.'); return null; }
+  return { u, plan };
+}
+// Remove do plano o que já está no sistema (mesma chave de origem, mesma nota ou dia com faturamento lançado à mão).
+async function legacyFresh(c, unitId, plan) {
+  const skipped = { sales: [], expenses: [], cash_sessions: [] }, conflicts = [];
+  const saleKeys = new Set((await c.query("SELECT split_part(notes,E'\\n',1) k FROM sales WHERE unit_id=$1 AND status<>'void' AND split_part(notes,E'\\n',1)=ANY($2::text[])", [unitId, plan.sales.map(s => s.key)])).rows.map(r => r.k));
+  const manual = await c.query("SELECT sale_date::text d FROM sales WHERE unit_id=$1 AND status='confirmed' AND (notes IS NULL OR notes NOT LIKE 'Planilha %') AND sale_date>=$2 AND sale_date<=$3", [unitId, plan.sales.length ? plan.sales[0].date.slice(0, 7) + '-01' : '2000-01-01', plan.sales.length ? plan.sales[plan.sales.length - 1].date : '2000-01-01']);
+  const manualDates = new Set(manual.rows.map(r => r.d)), manualMonths = new Set(manual.rows.map(r => r.d.slice(0, 7)));
+  const sales = plan.sales.filter(s => {
+    const why = saleKeys.has(s.key) ? 'já carregado antes' : (s.monthly ? manualMonths.has(s.monthly) : manualDates.has(s.date)) ? 'já há faturamento lançado nesse período' : null;
+    if (why) skipped.sales.push({ key: s.key, why }); return !why;
+  });
+  const expKeys = new Set((await c.query("SELECT split_part(notes,E'\\n',1) k FROM expenses WHERE unit_id=$1 AND split_part(notes,E'\\n',1)=ANY($2::text[])", [unitId, plan.expenses.map(e => e.key)])).rows.map(r => r.k));
+  const docs = plan.expenses.map(e => e.document_number).filter(Boolean);
+  const existingDocs = new Set((await c.query("SELECT lower(supplier) s,document_number n,issue_date::text d,total_cents::text t FROM expenses WHERE unit_id=$1 AND status<>'cancelled' AND document_number=ANY($2::text[])", [unitId, docs])).rows.map(r => `${r.s}|${r.n}|${r.d}|${r.t}`));
+  const expenses = plan.expenses.filter(e => {
+    const why = expKeys.has(e.key) ? 'já carregada antes' : e.document_number && existingDocs.has(`${e.supplier.toLowerCase()}|${e.document_number}|${e.issue_date}|${e.total_cents}`) ? 'nota já cadastrada' : null;
+    if (why) skipped.expenses.push({ key: e.key, why }); return !why;
+  });
+  const sessionNames = new Set((await c.query('SELECT shift_name FROM cash_sessions WHERE unit_id=$1 AND shift_name=ANY($2::text[])', [unitId, plan.cashSessions.map(s => s.shift_name)])).rows.map(r => r.shift_name));
+  const cashSessions = plan.cashSessions.filter(s => { if (sessionNames.has(s.shift_name)) { skipped.cash_sessions.push({ key: s.key, why: 'já carregado antes' }); return false; } return true; });
+  for (const s of cashSessions) {
+    const other = await c.query('SELECT shift_name FROM cash_sessions WHERE unit_id=$1 AND opened_at::date BETWEEN $2 AND $3 LIMIT 3', [unitId, s.first_date, s.last_date]);
+    if (other.rowCount) conflicts.push(`${s.shift_name}: já existem turnos de caixa no sistema nesse período (${other.rows.map(r => r.shift_name).join(', ')}). Confira para não duplicar movimentos.`);
+  }
+  return { sales, expenses, cashSessions, skipped, conflicts };
+}
+function legacyMonths(fresh) {
+  return [...new Set([...fresh.sales.map(s => s.date), ...fresh.expenses.map(e => e.accrual_date), ...fresh.cashSessions.flatMap(s => s.movements.map(m => m.date))].map(d => d.slice(0, 7)))].sort();
+}
+app.post('/api/import/legacy/preview', allow('admin', 'owner', 'finance'), legacyUpload.array('files', 6), async (req, res, next) => {
+  try {
+    const loaded = await legacyLoad(req, res); if (!loaded) return; const { u, plan } = loaded;
+    const fresh = await legacyFresh(pool, u.id, plan), today = localToday(), blocked = [];
+    for (const month of legacyMonths(fresh)) if (await periodIsClosed(u.id, `${month}-01`)) blocked.push(month);
+    const settlement = {};
+    for (const policy of legacySettlements) {
+      const t = { paid: 0, open: 0, paid_cents: 0, open_cents: 0 };
+      for (const e of fresh.expenses) for (const i of e.installments) { const s = settleInstallment(e, i, policy, today); if (s.paid) { t.paid++; t.paid_cents += i.amount_cents; } else { t.open++; t.open_cents += i.amount_cents; } }
+      settlement[policy] = t;
+    }
+    const sum = (list, key) => list.reduce((n, x) => n + x[key], 0);
+    res.json({
+      digest: plan.digest, files: plan.files, warnings: [...plan.warnings, ...fresh.conflicts.map(message => ({ file: '', sheet: '', line: 0, message }))], not_loaded: plan.notLoaded, blocked_months: blocked, settlement,
+      to_load: {
+        sales: { count: fresh.sales.length, total_cents: sum(fresh.sales, 'amount_cents') },
+        expenses: { count: fresh.expenses.length, installments: fresh.expenses.reduce((n, e) => n + e.installments.length, 0), total_cents: sum(fresh.expenses, 'total_cents') },
+        cash: { sessions: fresh.cashSessions.length, movements: fresh.cashSessions.reduce((n, s) => n + s.movements.length, 0), entries_cents: sum(fresh.cashSessions, 'entries_cents'), payments_cents: sum(fresh.cashSessions, 'payments_cents'), closing_cents: fresh.cashSessions.length ? fresh.cashSessions[fresh.cashSessions.length - 1].expected_cents : 0 }
+      },
+      skipped: fresh.skipped
+    });
+  } catch (e) { if (e instanceof multer.MulterError) return fail(res, 413, 'Arquivo muito grande ou arquivos demais.'); next(e); }
+});
+app.post('/api/import/legacy/commit', allow('admin', 'owner', 'finance'), legacyUpload.array('files', 6), async (req, res, next) => {
+  try {
+    const loaded = await legacyLoad(req, res); if (!loaded) return; const { u, plan } = loaded;
+    if (req.body.digest !== plan.digest) return fail(res, 409, 'As planilhas mudaram desde a conferência. Leia e confira novamente.');
+    const settlementPolicy = legacySettlements.includes(req.body.settlement) ? req.body.settlement : 'past_paid', today = localToday(), batchId = id();
+    const result = await inTx(async c => {
+      const fresh = await legacyFresh(c, u.id, plan);
+      for (const month of legacyMonths(fresh)) if (await periodIsClosed(u.id, `${month}-01`, c)) return { error: `O mês ${month.slice(5)}/${month.slice(0, 4)} está fechado. Reabra o período com justificativa antes de carregar.` };
+      const categories = Object.fromEntries((await c.query("SELECT id,name FROM categories WHERE unit_id=$1 AND kind='expense' AND active", [u.id])).rows.map(r => [r.name, r.id]));
+      const report = { batch_id: batchId, settlement: settlementPolicy, sales: { count: 0, total_cents: 0 }, expenses: { count: 0, installments_paid: 0, installments_open: 0, total_cents: 0, paid_cents: 0, open_cents: 0 }, cash: { sessions: 0, movements: 0, entries_cents: 0, payments_cents: 0 }, skipped: fresh.skipped, files: plan.files.map(f => `${f.file} · ${f.sheet}`) };
+      for (const s of fresh.sales) {
+        await c.query("INSERT INTO sales(id,unit_id,sale_date,channel,amount_cents,notes,status,created_by) VALUES($1,$2,$3,'Salão',$4,$5,'confirmed',$6)", [id(), u.id, s.date, s.amount_cents, `${s.notes}\n[carga ${batchId}]`, req.session.user.id]);
+        report.sales.count++; report.sales.total_cents += s.amount_cents;
+      }
+      for (const e of fresh.expenses) {
+        const expenseId = id(), settled = e.installments.map(i => ({ i, s: settleInstallment(e, i, settlementPolicy, today) })), allPaid = settled.every(x => x.s.paid), firstDue = e.installments.map(i => i.due_date).filter(Boolean).sort()[0] || null;
+        await c.query('INSERT INTO expenses(id,unit_id,supplier,document_number,issue_date,accrual_date,category_id,description,total_cents,due_date,payment_method,nature,installment_count,status,notes,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)',
+          [expenseId, u.id, e.supplier.slice(0, 160), e.document_number, e.issue_date, e.accrual_date, categories[e.category] || categories['Sem classificação'] || null, e.description.slice(0, 250), e.total_cents, firstDue, e.payment_method, e.nature, e.installments.length, allPaid ? 'paid' : 'open', `${e.notes}\n[carga ${batchId}]`, req.session.user.id]);
+        for (const { i, s } of settled) {
+          const installmentId = id();
+          await c.query('INSERT INTO expense_installments(id,expense_id,installment_number,amount_cents,due_date,paid_cents) VALUES($1,$2,$3,$4,$5,$6)', [installmentId, expenseId, i.number, i.amount_cents, i.due_date, s.paid ? i.amount_cents : 0]);
+          if (s.paid) {
+            await c.query("INSERT INTO expense_payments(id,expense_id,installment_id,paid_on,amount_cents,payment_method,responsible,paid_from_store,created_by) VALUES($1,$2,$3,$4,$5,$6,'Carga de planilha',false,$7)", [id(), expenseId, installmentId, s.paid_on, i.amount_cents, e.payment_method, req.session.user.id]);
+            report.expenses.installments_paid++; report.expenses.paid_cents += i.amount_cents;
+          } else { report.expenses.installments_open++; report.expenses.open_cents += i.amount_cents; }
+        }
+        report.expenses.count++; report.expenses.total_cents += e.total_cents;
+      }
+      for (const s of fresh.cashSessions) {
+        const sessionId = id(), openedAt = `${s.first_date}T08:00:00-03:00`, closedAt = `${s.last_date}T23:30:00-03:00`;
+        await c.query("INSERT INTO cash_sessions(id,unit_id,shift_name,opened_at,opening_cents,opened_by,closed_at,expected_cents,counted_cents,difference_cents,close_reason,closed_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$8,0,'Carga histórica: saldo conferido com a planilha',$6)", [sessionId, u.id, s.shift_name, openedAt, s.opening_cents, req.session.user.id, closedAt, s.expected_cents]);
+        await c.query("INSERT INTO cash_movements(id,unit_id,session_id,movement_type,occurred_at,amount_cents,gross_amount_cents,category,description,responsible,notes,created_by) VALUES($1,$2,$3,'opening',$4,$5,$5,'Abertura','Saldo inicial do caixa',$6,$7,$8)", [id(), u.id, sessionId, openedAt, s.opening_cents, req.session.user.name, `${s.key}\n[carga ${batchId}]`, req.session.user.id]);
+        for (const m of s.movements) {
+          await c.query("INSERT INTO cash_movements(id,unit_id,session_id,movement_type,occurred_at,amount_cents,gross_amount_cents,category,description,payment_method,responsible,notes,created_by) VALUES($1,$2,$3,$4,$5,$6,$6,$7,$8,'Dinheiro',$9,$10,$11)", [id(), u.id, sessionId, m.type, `${m.date}T12:00:00-03:00`, m.amount_cents, m.category.slice(0, 100), m.description.slice(0, 250), m.responsible.slice(0, 160), `${m.notes}\n[carga ${batchId}]`, req.session.user.id]);
+        }
+        report.cash.sessions++; report.cash.movements += s.movements.length; report.cash.entries_cents += s.entries_cents; report.cash.payments_cents += s.payments_cents;
+      }
+      await audit(c, req, u.id, 'legacy_import', 'import_batch', batchId, null, { ...report, skipped: { sales: fresh.skipped.sales.length, expenses: fresh.skipped.expenses.length, cash_sessions: fresh.skipped.cash_sessions.length }, warnings: plan.warnings.length });
+      return report;
+    });
+    if (result.error) return fail(res, 409, result.error);
+    res.status(201).json({ ...result, warnings: plan.warnings, not_loaded: plan.notLoaded });
+  } catch (e) { if (e instanceof multer.MulterError) return fail(res, 413, 'Arquivo muito grande ou arquivos demais.'); next(e); }
+});
 app.get('/api/import/batches',allow('admin','owner','finance'),async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const r=await pool.query(`SELECT b.id,b.source_name,b.sheet_name,b.import_type,b.status,b.report,b.created_at,b.completed_at,u.name user_name FROM import_batches b LEFT JOIN users u ON u.id=b.user_id WHERE b.unit_id=$1 ORDER BY b.created_at DESC LIMIT 300`,[u.id]);res.json(r.rows);}catch(e){next(e);}});
 app.post('/api/import/:id/reconcile',allow('admin','owner','finance'),async(req,res,next)=>{
   try{

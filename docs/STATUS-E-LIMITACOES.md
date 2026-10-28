@@ -32,7 +32,7 @@ Notas de conferência já disponíveis no contexto do projeto:
 - Notas fiscais: há registros com “X” em número/data de vencimento e padrões repetidos que podem ser parcelas ou duplicidade; não deduplicar automaticamente.
 - Caixa: a planilha indicada não estava acessível no caminho atual durante esta montagem. A análise histórica anterior relatou movimentos até 18 de outubro e muitos responsáveis em branco; conferir a planilha atualizada antes de migrar.
 
-Os valores acima descrevem o material analisado anteriormente e **não são dados importados no banco**. Repita a conferência dos arquivos de origem e gere relatório de reconciliação antes de qualquer migração oficial.
+Os valores acima descrevem o material analisado anteriormente. Eles só entram no banco quando alguém confirma a carga em Importar Excel (`docs/CARGA-PLANILHAS.md`); até lá **não são dados importados**. Repita a conferência dos arquivos de origem e gere relatório de reconciliação antes de qualquer migração oficial.
 
 ## Limitações de segurança e operação
 
@@ -43,7 +43,7 @@ Os valores acima descrevem o material analisado anteriormente e **não são dado
 - A auditoria não tem endpoint de edição/exclusão, mas ainda pode ser alterada com credenciais SQL administrativas.
 - Anexos são privados pela aplicação; em Railway, configure volume persistente em `/app/data/uploads`. Não há cópia de anexo no PostgreSQL.
 - `scripts/backup-postgres.sh` cria dump do PostgreSQL, cópia do volume de anexos e hashes; o procedimento de restauração isolada está em `docs/BACKUP-E-RESTAURACAO.md`. Agendamento, retenção e armazenamento externo dependem da infraestrutura. Na inspeção do Railway em 26/10/2026, o painel de backups do PostgreSQL e do serviço web não mostrava cópias; restauração ainda não foi exercitada.
-- Importação XLSX aceita faturamento, despesas e produtos, uma aba por vez; não importa caixa, DRE, CMV, pagamentos ou anexos. Não faz reconciliação contábil completa nem detecta todas as duplicidades.
+- Importação XLSX aceita faturamento, despesas e produtos, uma aba por vez. A carga das planilhas do Villa Cruz (Importar Excel) lê também caixa reserva, notas fiscais, CMV semanal e DRE mensal, com prévia e confirmação (`docs/CARGA-PLANILHAS.md`); não importa pagamentos individuais nem anexos, e consumo, cortesia e compras semanais do CMV não têm campo no sistema. Não faz reconciliação contábil completa nem detecta todas as duplicidades.
 - Relatórios permitem executar e salvar consultas com período, busca e status aplicável para faturamento, despesas, movimentos e fechamentos de caixa, posição e movimentações de estoque e linhas de origem da DRE; a exportação CSV usa a mesma consulta e os mesmos filtros. A execução limita a resposta a 5.000 linhas. Colunas customizadas, agrupamentos e fechamento contábil continuam fora desta entrega.
 - Não há envio de lembretes, OCR, aprovação genérica de lançamentos, fechamento contábil nem integração com PDV/iFood/banco. Recorrências geram rascunhos e os fechamentos mensais disponíveis são registros gerenciais, não fechamento fiscal/contábil.
 - O sistema não substitui revisão contábil e não deve ser tratado como fonte fiscal.
