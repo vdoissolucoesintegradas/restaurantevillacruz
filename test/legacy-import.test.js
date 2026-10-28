@@ -110,5 +110,77 @@ test('baixa presumida das parcelas conforme a opção escolhida', () => {
   assert.deepEqual(settleInstallment(expense, none, 'past_paid', '2026-10-28'), { paid: true, paid_on: '2026-10-01' });
   assert.deepEqual(settleInstallment(expense, past, 'all_open', '2026-10-28'), { paid: false });
   assert.deepEqual(settleInstallment(expense, future, 'all_paid', '2026-10-28'), { paid: true, paid_on: '2026-10-28' });
-  assert.deepEqual(settleInstallment({ ...expense, settled: true }, future, 'all_open', '2026-10-28'), { paid: true, paid_on: '2026-11-10' });
+  assert.deepEqual(settleInstallment({ ...expense, settled: true }, future, 'all_open', '2026-10-28'), { paid: true, paid_on: '2026-11-10', record: false });
+  assert.deepEqual(settleInstallment({ ...expense, bonus: true }, past, 'all_paid', '2026-10-28'), { paid: false });
+  assert.deepEqual(settleInstallment(expense, { due_date: '2026-09-20' }, 'past_paid', '2026-10-28'), { paid: true, paid_on: '2026-10-01' });
+});
+
+const head = ['DATA', 'FORNECEDOR', 'Nº NF', 'VALOR', 'VENCIMENTO', 'STATUS VENCIMENTO', 'OBJ. NEGÓCIO', 'NAT. OPERAÇÃO', 'OBS'];
+
+test('mesma aba enviada duas vezes é lida uma vez e avisada', async () => {
+  const buffer = await workbook({ 'SETEMBRO 2026': [head, [d('2026-09-01'), 'KROLOW', 'X', 10, 'X', '', 'INSUMO', 'CARNE']] });
+  const plan = await parseLegacyWorkbooks([{ name: 'nf.xlsx', buffer }, { name: 'nf (1).xlsx', buffer }]);
+  assert.equal(plan.expenses.length, 1);
+  assert.equal(plan.files.length, 1);
+  assert.ok(plan.warnings.some(w => /Aba repetida/.test(w.message) && w.file === 'nf (1).xlsx'));
+});
+
+test('notas sem NF repetidas ganham chave por conteúdo distinta e aviso de possível duplicidade', async () => {
+  const buffer = await workbook({ 'SETEMBRO 2026': [head,
+    [d('2026-09-08'), 'TREICHEL', 'X', 760.87, 'X', '', 'INSUMO', 'CANE', 'CARTÃO CRED.'],
+    [d('2026-09-08'), 'TREICHEL', 'X', 760.87, 'X', '', 'INSUMO', 'CARNE', 'CARTÃO CRED.']] });
+  const plan = await parseLegacyWorkbooks([{ name: 'nf.xlsx', buffer }]);
+  assert.equal(plan.expenses.length, 2);
+  assert.notEqual(plan.expenses[0].ref, plan.expenses[1].ref);
+  assert.ok(plan.expenses.every(e => e.ref.startsWith('TREICHEL|2026-09-08|76087|')));
+  assert.ok(plan.expenses.every(e => e.notes.split('\n')[1] === 'ref:' + e.ref));
+  assert.ok(plan.warnings.some(w => /duplicidade/.test(w.message)));
+});
+
+test('produto bonificado vira nota em revisão e não gera pagamento', async () => {
+  const buffer = await workbook({ 'SETEMBRO 2026': [head, [d('2026-09-01'), 'MAR', '1459672', 100.36, 'X', 'X', 'INSUMO', 'CORAÇÃO', 'PRODUTO BONIFICADO']] });
+  const plan = await parseLegacyWorkbooks([{ name: 'nf.xlsx', buffer }]);
+  assert.equal(plan.expenses[0].bonus, true);
+  assert.deepEqual(settleInstallment(plan.expenses[0], plan.expenses[0].installments[0], 'past_paid', '2026-10-28'), { paid: false });
+  assert.ok(plan.warnings.some(w => /bonificado/.test(w.message)));
+});
+
+test('nota com várias linhas usa a natureza da linha de maior valor e a data em observação sai em dd/mm/aaaa', async () => {
+  const buffer = await workbook({ 'SETEMBRO 2026': [head,
+    [d('2026-09-02'), 'KROLOW', '351868', 92.3, d('2026-09-20'), '', 'LIMPESA', 'LIMPESA'],
+    [d('2026-09-02'), 'KROLOW', '351868', 4327.97, d('2026-09-20'), '', 'INSUMO', 'MERCEARIA', d('2026-09-09')]] });
+  const plan = await parseLegacyWorkbooks([{ name: 'nf.xlsx', buffer }]);
+  assert.equal(plan.expenses.length, 1);
+  assert.equal(plan.expenses[0].description, 'Mercearia');
+  assert.equal(plan.expenses[0].nature, 'LIMPESA / MERCEARIA');
+  assert.ok(plan.expenses[0].notes.includes('09/09/2026'));
+  assert.ok(!/GMT/.test(plan.expenses[0].notes));
+});
+
+test('caixa: entrada com descrição não vira dinheiro do caixa e as regras de categoria usam palavras inteiras', async () => {
+  const cashHead = ['DATA DO CAIXA', 'ENTRADA (DINHEIRO CAIXA )', 'OPERADORA', 'PAGTO. EFETUADO (DESCRIÇÃO )', 'VALOR', 'RESPONSAVEL PELO PAG.', 'SALDO DE CAIXA'];
+  const rows = [['', '', '', 'CAIXA RESERVA'], [], cashHead, [null, null, null, 'SALDO DE CAIXA', null, null, 0],
+    [d('2026-09-01'), 1700, 'CAIO', 'FUNDO DE RESERVA', null, null, 1700],
+    [d('2026-09-01'), 300, 'JAINE', null, null, null, 2000]];
+  const outs = [['UBER ( KROLOW E TREICHEL CAIO )', 'Transporte'], ['PAD. PANEMIO', 'Compras de insumos'], ['V T YASMIN', 'Vale transporte'], ['SHOOP CAMISETA UNIFORME 12 UM.', 'Pessoal'],
+    ['UTENCILIO/LEITEIRA PRA AGUA', 'Manutenção e utensílios'], ['ANGELO MOTORISTA FOLGA', 'Transporte'], ['MONGELO XPTO', 'Outras despesas'], ['PAGAMENTO PELA LOJA/WENDELL', 'Pessoal']];
+  let balance = 2000;
+  for (const [desc] of outs) { balance -= 10; rows.push([d('2026-09-02'), null, 'JAINE', desc, 10, null, balance]); }
+  const plan = await parseLegacyWorkbooks([{ name: 'caixa.xlsx', buffer: await workbook({ 'SETEMBRO 2026': rows }) }]);
+  const s = plan.cashSessions[0];
+  assert.equal(s.movements[0].category, 'Outras entradas');
+  assert.equal(s.movements[0].description, 'FUNDO DE RESERVA — CAIO');
+  assert.equal(s.movements[1].category, 'Entrada de dinheiro do caixa');
+  outs.forEach(([desc, category], i) => assert.equal(s.movements[2 + i].category, category, desc));
+  assert.ok(plan.warnings.some(w => /FUNDO DE RESERVA/.test(w.message)));
+});
+
+test('aba com linhas demais é ignorada e nome de aba desconhecido não derruba a leitura', async () => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('SETEMBRO 2026');
+  ws.addRow(head); ws.addRow([d('2026-09-01'), 'KROLOW', 'X', 10, 'X', '', 'INSUMO', 'CARNE']);
+  ws.getCell('A10005').value = 'x';
+  const plan = await parseLegacyWorkbooks([{ name: 'grande.xlsx', buffer: Buffer.from(await wb.xlsx.writeBuffer()) }]);
+  assert.equal(plan.files.length, 0);
+  assert.ok(plan.warnings.some(w => /excedem o limite/.test(w.message)));
 });

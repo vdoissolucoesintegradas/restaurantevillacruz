@@ -8,21 +8,27 @@ const MONTHS = { JANEIRO: 1, FEVEREIRO: 2, MARCO: 3, ABRIL: 4, MAIO: 5, JUNHO: 6
 const MONTH_NAMES = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 const CMV_CATEGORY = 'CMV (regra pendente)';
 const CATEGORY_BY_OBJECTIVE = { INSUMO: CMV_CATEGORY, LIMPESA: CMV_CATEGORY, LIMPEZA: CMV_CATEGORY, DESCARTAVEL: CMV_CATEGORY, VT: 'Pessoal', UNIFORME: 'Pessoal', MANUTENCAO: 'Ocupação', UTENCILIO: 'Ocupação', INVESTIMENTO: 'Ocupação' };
+const ROW_LIMIT = 10001; // mesmo limite do importador padrão
+const LONG_TERM_DAYS = 40;
+// Ordem importa: a primeira regra que casar vence. O texto chega sem acento e em maiúsculas.
 const CASH_OUTFLOW_RULES = [
-  [/DEP[ÓO]SITO/, 'Depósito bancário'],
+  [/DEPOSITO/, 'Depósito bancário'],
   [/RETIRADA|\bPPR\b/, 'Retiradas e PPR'],
-  [/VALE DO FUNC/, 'Pessoal'],
-  [/^VT\b|VALE TRANS|REEBOLSO VALE|REEMBOLSO VALE/, 'Vale transporte'],
-  [/DI[ÁA]RIA|SAL[ÁA]RIO|GRATIFICA|TREIN/, 'Pessoal'],
-  [/MANUTEN|PEDREIRO|GESSO|FERRAGEM|EL[ÉE]TRIC|CCM|RELE|TOMADA/, 'Manutenção'],
-  [/HORTIFRUTI|CARNE|CARV[ÃA]O|P[ÃA]O|GELO|CARREFOUR|BATATA|TREICHEL|PIZZA|[ÓO]LEO|GUANABARA|POLSKA|PROPRINSUL|[ÁA]GUA|ATACAD/, 'Compras de insumos'],
-  [/UBER|GASOLINA|MOTO/, 'Transporte']
+  [/UBER|GASOLINA|\bMOTO|COMBUST/, 'Transporte'],
+  [/VALE DO FUNC|PAGAMENTO PELA LOJA|REEBOLSO|REEMBOLSO/, 'Pessoal'],
+  [/^V ?T\b|VALE TRANS/, 'Vale transporte'],
+  [/DIARIA|SALARIO|GRATIFICA|TREIN|UNIFORME|CAMISETA|JAQUETA|BORDADO/, 'Pessoal'],
+  [/MANUTEN|PEDREIRO|GESSO|FERRAGEM|ELETRIC|\bCCM\b|\bRELE\b|TOMADA|UTEN[SC]|GARFO|FACA|LEITEIRA/, 'Manutenção e utensílios'],
+  [/HORTIFRUTI|CARNE|CARVAO|\bPAO\b|\bPAD\b|\bGELO\b|CARREFOUR|BATATA|TREICHEL|PIZZA|OLEO|GUANABARA|POLSKA|PROPRINSUL|AGUA|ATACAD/, 'Compras de insumos']
 ];
 
-const plain = value => String(value ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
-const clean = value => String(value ?? '').replace(/\s+/g, ' ').trim();
 const pad = n => String(n).padStart(2, '0');
 const brDate = iso => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+// Datas de célula viram dd/mm/aaaa em UTC (nunca o texto do fuso do servidor).
+const str = v => (v instanceof Date && !Number.isNaN(v.getTime()) ? `${pad(v.getUTCDate())}/${pad(v.getUTCMonth() + 1)}/${v.getUTCFullYear()}` : String(v ?? ''));
+const plain = value => str(value).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+const clean = value => str(value).replace(/\s+/g, ' ').trim();
+const money = c => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function cellValue(v) {
   if (v === null || v === undefined) return null;
@@ -52,12 +58,12 @@ function isoDate(v) {
   const d = new Date(`${iso}T00:00:00Z`);
   return d.toISOString().slice(0, 10) === iso ? iso : null;
 }
+const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
 function sheetMonth(name) {
   const parts = plain(name).split(' ');
   const month = MONTHS[parts[0]], year = Number(parts.find(p => /^\d{4}$/.test(p)));
   return month && year ? { year, month, key: `${year}-${pad(month)}`, label: `${MONTH_NAMES[month]} ${year}` } : null;
 }
-const addMonths = (key, delta) => { const d = new Date(Date.UTC(Number(key.slice(0, 4)), Number(key.slice(5, 7)) - 1 + delta, 1)); return d.toISOString().slice(0, 7); };
 const lastDay = key => new Date(Date.UTC(Number(key.slice(0, 4)), Number(key.slice(5, 7)), 0)).toISOString().slice(0, 10);
 
 function detectKind(ws) {
@@ -78,7 +84,7 @@ function parseInvoices(ws, file, out) {
     const supplier = clean(cell(ws, r, 2)), total = cents(cell(ws, r, 4)), rawIssue = cell(ws, r, 1);
     if (!supplier && total === null && rawIssue === null) continue;
     const where = { file, sheet: ws.name, line: r };
-    let issue = isoDate(rawIssue);
+    const issue = isoDate(rawIssue);
     if (!supplier || total === null || total <= 0 || !issue) { out.warnings.push({ ...where, message: `Nota ignorada: ${!supplier ? 'fornecedor ausente' : !issue ? 'data de emissão inválida' : 'valor inválido'}.` }); continue; }
     const nfRaw = clean(cell(ws, r, 3)), nf = nfRaw && plain(nfRaw) !== 'X' ? nfRaw.slice(0, 100) : null;
     let due = isoDate(cell(ws, r, 5));
@@ -87,7 +93,9 @@ function parseInvoices(ws, file, out) {
       out.warnings.push({ ...where, message: `Vencimento ${brDate(due)} fora do padrão; usado ${brDate(fixed)} (mesmo ano da emissão). Confira.` });
       due = fixed;
     }
-    if (due && due < issue) out.warnings.push({ ...where, message: `${supplier}${nf ? ` NF ${nf}` : ''}: vencimento (${brDate(due)}) anterior à emissão (${brDate(issue)}). Mantido como está na planilha.` });
+    const tag = `${supplier}${nf ? ` NF ${nf}` : ''}`;
+    if (due && due < issue) out.warnings.push({ ...where, message: `${tag}: vencimento (${brDate(due)}) anterior à emissão (${brDate(issue)}). Mantido como está na planilha; a baixa presumida usa a data de emissão.` });
+    else if (due && daysBetween(issue, due) > LONG_TERM_DAYS) out.warnings.push({ ...where, message: `${tag}: vencimento ${daysBetween(issue, due)} dias após a emissão (${brDate(issue)} → ${brDate(due)}). Confira se a data está certa.` });
     const objective = plain(cell(ws, r, 7)), nature = clean(cell(ws, r, 8)), obs = clean(cell(ws, r, 9));
     rows.push({ file, sheet: ws.name, line: r, supplier, nf, issue, due, total, objective, nature, obs, period: period?.key || issue.slice(0, 7) });
   }
@@ -104,24 +112,47 @@ function buildExpenses(out) {
   }
   const groups = new Map();
   for (const row of unique) {
-    const key = row.nf ? `${plain(row.supplier)}|${row.nf}|${row.issue}` : `x|${row.sheet}|${row.line}`;
+    const key = row.nf ? `${plain(row.supplier)}|${row.nf}|${row.issue}` : `x|${row.file}|${row.sheet}|${row.line}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(row);
   }
+  const repeats = new Map();
   for (const rows of groups.values()) {
     rows.sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999') || a.line - b.line);
-    const first = rows[0], category = CATEGORY_BY_OBJECTIVE[first.objective] || 'Sem classificação';
+    const first = rows[0], dominant = rows.reduce((a, b) => (b.total > a.total ? b : a), rows[0]);
+    const categoryOf = x => CATEGORY_BY_OBJECTIVE[x.objective] || 'Sem classificação';
+    const category = categoryOf(dominant);
+    if (new Set(rows.map(categoryOf)).size > 1) out.warnings.push({ file: first.file, sheet: first.sheet, line: first.line, message: `${first.supplier} NF ${first.nf}: linhas de categorias diferentes na mesma nota; o total ficou em "${category}".` });
+    const natures = [...new Set(rows.map(x => x.nature).filter(Boolean))];
     const obs = [...new Set(rows.map(x => x.obs).filter(Boolean))].join(' / ');
+    const bonus = /BONIFIC/.test(plain(obs));
     const method = /CART/.test(plain(obs)) ? 'Cartão de crédito' : /PIX/.test(plain(obs)) ? 'Pix' : null;
-    const lines = rows.map(x => x.line).join(', ');
-    const key = `Planilha NF · ${first.sheet} · linha${rows.length > 1 ? 's' : ''} ${lines}`;
+    const total = rows.reduce((s, x) => s + x.total, 0);
+    const key = `Planilha NF · ${first.sheet} · linha${rows.length > 1 ? 's' : ''} ${rows.map(x => x.line).join(', ')}`;
+    const base = [plain(first.supplier), first.issue, total, first.due || ''].join('|'), nth = (repeats.get(base) || 0) + 1;
+    repeats.set(base, nth);
+    const ref = `${base}|${nth}`;
+    if (bonus) out.warnings.push({ file: first.file, sheet: first.sheet, line: first.line, message: `${first.supplier}${first.nf ? ` NF ${first.nf}` : ''}: produto bonificado (${money(total)}). Entra como nota cancelada (sem custo, sem pagamento e fora da DRE), só para ficar registrada.` });
+    const nature = natures.join(' / ').slice(0, 120);
     out.expenses.push({
-      key, supplier: first.supplier, document_number: first.nf, issue_date: first.issue, accrual_date: first.issue,
-      description: first.nature ? first.nature.charAt(0) + first.nature.slice(1).toLowerCase() : 'Compra', nature: first.nature || null,
-      objective: first.objective || null, category, payment_method: method, total_cents: rows.reduce((s, x) => s + x.total, 0),
+      key, ref, supplier: first.supplier, document_number: first.nf, issue_date: first.issue, accrual_date: first.issue,
+      description: dominant.nature ? dominant.nature.charAt(0) + dominant.nature.slice(1).toLowerCase() : 'Compra', nature: nature || null,
+      objective: dominant.objective || null, category, payment_method: method, total_cents: total, bonus,
       installments: rows.map((x, i) => ({ number: i + 1, amount_cents: x.total, due_date: x.due })),
-      notes: `${key}${obs ? `\n${obs}` : ''}`
+      notes: `${key}\nref:${ref}${obs ? `\n${obs}` : ''}`
     });
+  }
+  // Compras repetidas parecem digitação dupla: avisa, mas não descarta nada.
+  const noDoc = out.expenses.filter(e => !e.document_number && !e.key.includes('Planilha DRE'));
+  const bySame = new Map();
+  for (const e of noDoc) { const k = [plain(e.supplier), e.issue_date, e.total_cents].join('|'); (bySame.get(k) || bySame.set(k, []).get(k)).push(e); }
+  for (const list of bySame.values()) if (list.length > 1) out.warnings.push({ file: '', sheet: '', line: 0, message: `Possível lançamento em duplicidade: ${list[0].supplier}, ${brDate(list[0].issue_date)}, ${money(list[0].total_cents)} aparece ${list.length} vezes (${list.map(e => e.key.replace('Planilha NF · ', '')).join('; ')}). As duas foram mantidas; confira.` });
+  for (let i = 0; i < out.expenses.length; i++) for (let j = i + 1; j < out.expenses.length; j++) {
+    const a = out.expenses[i], b = out.expenses[j];
+    if (a.total_cents !== b.total_cents || !a.nature || !b.nature || plain(a.nature) !== plain(b.nature) || plain(a.supplier) === plain(b.supplier)) continue;
+    if (a.document_number && b.document_number) continue;
+    if (Math.abs(daysBetween(a.issue_date, b.issue_date)) > 3) continue;
+    out.warnings.push({ file: '', sheet: '', line: 0, message: `Podem ser a mesma compra: ${a.supplier} (${brDate(a.issue_date)}) e ${b.supplier} (${brDate(b.issue_date)}), ${money(a.total_cents)}, "${a.nature}". As duas foram mantidas; confira.` });
   }
 }
 
@@ -138,18 +169,19 @@ function parseCash(ws, file, out) {
     if (!inCents && !outCents) { if (desc || operator) out.warnings.push({ ...where, message: `Linha sem valor ignorada${desc ? `: "${desc}"` : ''}.` }); continue; }
     let date = isoDate(typeof rawDate === 'string' ? rawDate.trim() : rawDate);
     if (!date || date.slice(0, 7) !== period.key) {
-      if (previousDate || date) {
-        const fixed = previousDate || `${period.key}-01`;
-        out.warnings.push({ ...where, message: `Data ${date ? brDate(date) : 'ausente'} fora do mês da aba; usada ${brDate(fixed)} (linha anterior). Confira.` });
-        date = fixed;
-      } else date = `${period.key}-01`;
+      const fixed = previousDate || `${period.key}-01`;
+      out.warnings.push({ ...where, message: `Data ${date ? brDate(date) : 'ausente'} fora do mês da aba; usada ${brDate(fixed)} (${previousDate ? 'linha anterior' : 'primeiro dia do mês'}). Confira.` });
+      date = fixed;
     }
     previousDate = date;
     if (balance !== null && cents(balance) !== null) lastSheetBalance = cents(balance);
     const responsible = /^[A-Za-zÀ-ÿ]{3,14}$/.test(resp) ? resp : null;
     const line = `${key} · linha ${r}`;
-    if (inCents) { entries += inCents; movements.push({ key: line, date, type: 'inflow', amount_cents: inCents, category: 'Entrada de dinheiro do caixa', description: `Dinheiro do caixa — ${operator || 'sem operadora'}`, responsible: operator || 'Não informado', notes: line }); }
-    else {
+    if (inCents) {
+      entries += inCents;
+      if (desc) out.warnings.push({ ...where, message: `Entrada com descrição "${desc}" (${money(inCents)}) lançada como "Outras entradas", não como dinheiro do caixa.` });
+      movements.push({ key: line, date, type: 'inflow', amount_cents: inCents, category: desc ? 'Outras entradas' : 'Entrada de dinheiro do caixa', description: desc ? `${desc} — ${operator || 'sem operadora'}` : `Dinheiro do caixa — ${operator || 'sem operadora'}`, responsible: operator || 'Não informado', notes: line });
+    } else {
       const upper = plain(desc);
       const category = (CASH_OUTFLOW_RULES.find(([re]) => re.test(upper)) || [null, 'Outras despesas'])[1];
       payments += outCents;
@@ -217,7 +249,7 @@ function parseDre(ws, file, out) {
     const calc = (block['INVENTARIO JUNHO'] || 0) + (block['COMPRAS JULHO'] || 0) - (block['INVENTARIO JULHO'] || 0) + (block['MOTOBOY / UBER'] || 0) + (block['DESCARTAVEIS'] || 0) - (block['ALMOCO FUNCIONARIOS - CORTESIA'] || 0);
     if (calc !== cmvFinal) out.warnings.push({ file, sheet: ws.name, line: 0, message: `CMV final da planilha (${(cmvFinal / 100).toFixed(2)}) não bate com a soma dos componentes (${(calc / 100).toFixed(2)}).` });
     const key2 = `Planilha DRE · ${label} · CMV consolidado`;
-    out.expenses.push({ key: key2, supplier: `DRE ${label} (consolidado)`, document_number: null, issue_date: date, accrual_date: date, description: `CMV de ${label} — consolidado da planilha DRE`, nature: 'CMV', objective: 'CMV', category: CMV_CATEGORY, payment_method: null, total_cents: cmvFinal, installments: [{ number: 1, amount_cents: cmvFinal, due_date: date }], notes: key2, settled: true });
+    out.expenses.push({ key: key2, ref: key2, supplier: `DRE ${label} (consolidado)`, document_number: null, issue_date: date, accrual_date: date, description: `CMV de ${label} — consolidado da planilha DRE`, nature: 'CMV', objective: 'CMV', category: CMV_CATEGORY, payment_method: null, total_cents: cmvFinal, installments: [{ number: 1, amount_cents: cmvFinal, due_date: date }], notes: `${key2}\nref:${key2}\nValor contábil consolidado (estoque inicial + compras − estoque final + extras − cortesia); não é um pagamento.`, settled: true });
   }
   out.notLoaded.push(`${ws.name}: despesas (aluguel, folha etc.) estão zeradas e as taxas são percentuais fixos; não foram lançadas.`);
   out.files.push({ file, sheet: ws.name, kind: 'dre', rows: methods.length, total_cents: total, month: key, cmv_cents: cmvFinal });
@@ -225,16 +257,21 @@ function parseDre(ws, file, out) {
 
 async function parseLegacyWorkbooks(files) {
   const out = { sales: [], expenses: [], cashSessions: [], invoiceRows: [], files: [], warnings: [], notLoaded: [], ignored: [] };
+  const seenSheets = new Map();
   for (const f of files) {
     const wb = new ExcelJS.Workbook();
     try { await wb.xlsx.load(f.buffer); } catch { out.warnings.push({ file: f.name, sheet: '', line: 0, message: 'Arquivo não pôde ser lido como XLSX.' }); continue; }
     for (const ws of wb.worksheets) {
       const kind = detectKind(ws);
+      if (!kind) { if (ws.rowCount) out.ignored.push(`${f.name} · ${ws.name}`); continue; }
+      if (ws.rowCount > ROW_LIMIT) { out.warnings.push({ file: f.name, sheet: ws.name, line: 0, message: `Aba ignorada: ${ws.rowCount} linhas excedem o limite de ${ROW_LIMIT - 1}. Apague as linhas vazias formatadas no final e envie de novo.` }); continue; }
+      const signature = `${kind}|${plain(ws.name)}`;
+      if (seenSheets.has(signature)) { out.warnings.push({ file: f.name, sheet: ws.name, line: 0, message: `Aba repetida: a aba "${ws.name}" já foi lida em "${seenSheets.get(signature)}". Esta cópia foi ignorada para não duplicar lançamentos.` }); continue; }
+      seenSheets.set(signature, f.name);
       if (kind === 'invoices') parseInvoices(ws, f.name, out);
       else if (kind === 'cash') parseCash(ws, f.name, out);
       else if (kind === 'cmv') parseCmv(ws, f.name, out);
-      else if (kind === 'dre') parseDre(ws, f.name, out);
-      else if (ws.rowCount) out.ignored.push(`${f.name} · ${ws.name}`);
+      else parseDre(ws, f.name, out);
     }
   }
   buildExpenses(out);
@@ -247,13 +284,16 @@ async function parseLegacyWorkbooks(files) {
 }
 
 // Como cada parcela entra: 'paid' (baixa presumida) ou 'open'. policy: past_paid | all_open | all_paid.
+// record:false = baixa sem registro de pagamento (valor contábil consolidado).
 function settleInstallment(expense, installment, policy, today) {
-  if (expense.settled) return { paid: true, paid_on: installment.due_date || expense.issue_date };
+  if (expense.bonus) return { paid: false };
+  if (expense.settled) return { paid: true, paid_on: installment.due_date || expense.issue_date, record: false };
+  const afterIssue = d => (d < expense.issue_date ? expense.issue_date : d);
   const noDue = !installment.due_date;
   if (policy === 'all_open') return { paid: false };
-  if (policy === 'all_paid') return { paid: true, paid_on: noDue ? expense.issue_date : (installment.due_date < today ? installment.due_date : today) };
+  if (policy === 'all_paid') return { paid: true, paid_on: noDue ? expense.issue_date : afterIssue(installment.due_date < today ? installment.due_date : today) };
   if (noDue) return { paid: true, paid_on: expense.issue_date };
-  return installment.due_date <= today ? { paid: true, paid_on: installment.due_date } : { paid: false };
+  return installment.due_date <= today ? { paid: true, paid_on: afterIssue(installment.due_date) } : { paid: false };
 }
 
-module.exports = { parseLegacyWorkbooks, settleInstallment, CMV_CATEGORY };
+module.exports = { parseLegacyWorkbooks, settleInstallment, CMV_CATEGORY, ROW_LIMIT };
