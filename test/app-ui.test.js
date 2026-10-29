@@ -15,6 +15,7 @@ function element() {
     dataset: {},
     classList: { toggle() {}, remove() {}, add() {} },
     addEventListener() {},
+    insertAdjacentHTML(_where, html) { this.innerHTML += html; },
     querySelector() { return element(); },
   };
 }
@@ -35,7 +36,7 @@ const flowFixture = {
   ],
 };
 
-async function launchApp({ role = 'owner', now = null, sales = [] } = {}) {
+async function launchApp({ role = 'owner', now = null, sales = [], cash = null } = {}) {
   class FixedDate extends Date {
     constructor(...args) { if (args.length) super(...args); else super(now); }
     static now() { return new Date(now).getTime(); }
@@ -69,7 +70,8 @@ async function launchApp({ role = 'owner', now = null, sales = [] } = {}) {
       stock: { expired: 1, expires_soon: 0, low_stock: 0 }, activity: [],
     };
     else if (String(url).startsWith('/api/operations/tasks')) data = [];
-    else if (String(url).startsWith('/api/cash')) data = { movements: [], open_session: null, balance_cents: '0' };
+    else if (String(url).startsWith('/api/cash/discrepancies')) data = { rows: [], summary: { closures_with_difference: 0, positive_count: 0, positive_cents: '0', negative_count: 0, negative_cents: '0', absolute_cents: '0', net_cents: '0', opening_breaks: 0, opening_net_cents: '0' }, limits: null, alert: false, limited: false };
+    else if (String(url).startsWith('/api/cash')) data = cash || { movements: [], open_session: null, balance_cents: '0' };
     else if (String(url).startsWith('/api/bank/flow')) data = flowFixture;
     else if (String(url).startsWith('/api/bank/accounts')) data = flowFixture.accounts;
     else if (String(url).startsWith('/api/payment-methods')) data = [{ id: 'pm1', name: 'Pix', fee_applicable: false, active: true, bank_account_id: 'a1', bank_account_name: 'Itaú PJ' }, { id: 'pm2', name: 'Dinheiro', fee_applicable: false, active: true, bank_account_id: null, bank_account_name: null }];
@@ -99,6 +101,26 @@ test('painel mostra alertas acionáveis e direciona para os módulos', async () 
   assert.match(html, /data-page-link="inventory"/);
   assert.match(html, /data-page-link="cash"/);
   assert.match(html, /Faturamento de hoje não lançado/);
+  assert.match(html, /data-do="stock-receive-quick"/);
+  assert.match(html, /data-do="cash-movement-quick"/);
+  assert.doesNotMatch(html, /data-page-link="inventory">＋ Receber estoque/);
+});
+
+test('caixa: a abertura traz o saldo acumulado do sistema e o campo para contar a gaveta', async () => {
+  const closed = await openPage(await launchApp({ cash: { movements: [], open_session: null, balance_cents: '123456', balance_source: 'closed', carried_cents: '-50000' } }), 'cash', 'Caixa fechado');
+  assert.match(closed, /data-do="cash-open"/);
+  assert.match(closed, /R\$\s?1\.234,56/);
+  assert.match(closed, /Saldo acumulado: último fechamento contado menos R\$\s?500,00 de depósitos e saques feitos desde então/);
+  assert.match(closed, /Depósitos e saques podem ser feitos com o caixa fechado/);
+  assert.match(closed, /informa o que contou na gaveta/);
+  assert.doesNotMatch(closed, /name="opening_amount"/);
+  const first = await openPage(await launchApp({ cash: { movements: [], open_session: null, balance_cents: '0', balance_source: 'none', carried_cents: '0' } }), 'cash', 'Caixa fechado');
+  assert.match(first, /Nenhum turno foi fechado ainda/);
+  const session = { id: 's1', shift_name: 'Almoço', opened_at: '2026-10-29T15:00:00Z', expected_cents: '19000', opening_system_cents: '20000', opening_counted_cents: '19000', opening_difference_cents: '-1000', opening_reason: 'Troco faltando' };
+  const open = await openPage(await launchApp({ cash: { movements: [], open_session: session, balance_cents: '19000', balance_source: 'open', carried_cents: '0' } }), 'cash', 'Turno em andamento');
+  assert.match(open, /Abertura conferida/);
+  assert.match(open, /Falta/);
+  assert.match(open, /Troco faltando/);
 });
 
 test('despesas mostram saldo pendente e não oferecem pagamento a uma despesa quitada', async () => {

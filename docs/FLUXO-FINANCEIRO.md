@@ -21,8 +21,8 @@ Módulo gerencial para acompanhar onde está o dinheiro da loja: caixa da loja (
 
 | Tipo | Efeito | Regras |
 |---|---|---|
-| Depósito do caixa no banco | Saída no livro do caixa (`Depósito bancário`) e entrada na conta | Exige turno aberto, data de hoje e valor até o saldo esperado do turno |
-| Saque do banco para o caixa | Saída na conta e entrada no livro do caixa (`Saque para o caixa`) | Exige turno aberto, data de hoje e saldo suficiente na conta |
+| Depósito do caixa no banco | Saída no livro do caixa (`Depósito bancário`) e entrada na conta | Não exige turno aberto (com o caixa fechado desconta do saldo acumulado). Data de hoje e valor até o saldo disponível |
+| Saque do banco para o caixa | Saída na conta e entrada no livro do caixa (`Saque para o caixa`) | Não exige turno aberto (com o caixa fechado soma ao saldo acumulado). Data de hoje e saldo suficiente na conta |
 | Transferência entre contas | Saída na origem e entrada no destino, na mesma transação | Contas diferentes e saldo suficiente na origem; não altera o caixa |
 | Recebimento no banco | Entrada na conta | Repasse de cartão, Pix e outros créditos |
 | Pagamento pelo banco / Tarifa | Saída na conta | Podem deixar a conta negativa (o evento já ocorreu); o painel destaca saldo negativo |
@@ -34,12 +34,12 @@ Módulo gerencial para acompanhar onde está o dinheiro da loja: caixa da loja (
 ## Estorno
 
 - Excluir é estornar: o estorno cria o lançamento oposto, marca o original como estornado e guarda motivo, usuário e data. Lançamentos manuais permitem editar descrição, categoria, observações e data; ver `docs/PERMISSOES-LANCAMENTOS-E-AUDITORIA.md`.
-- Transferência é estornada nas duas pernas. Depósito e saque também geram o movimento oposto no caixa e exigem turno aberto.
+- Transferência é estornada nas duas pernas. Depósito e saque também geram o movimento oposto no caixa (no turno aberto ou no saldo acumulado do caixa fechado).
 - Um estorno não pode ser estornado. Pagamento de despesa feito pelo banco não é estornável por aqui (não existe estorno de pagamento de despesa no sistema).
 
 ## Painel
 
-- **Total disponível** = caixa da loja + contas bancárias. O caixa é o saldo esperado do turno aberto ou, sem turno aberto, o valor contado no último fechamento.
+- **Total disponível** = caixa da loja + contas bancárias. O caixa é o saldo esperado do turno aberto ou, sem turno aberto, o saldo acumulado: valor contado no último fechamento mais os depósitos e saques feitos desde então.
 - **Saldo após contas a pagar** = disponível − parcelas vencidas − parcelas dos próximos 30 dias (despesas confirmadas e abertas). É uma estimativa gerencial.
 - Totais do período ignoram movimentos estornados e seus estornos. Depósitos, saques e transferências são movimentos internos e não entram em recebimentos nem em pagamentos.
 - Gráficos de recebimentos × pagamentos usam até os 500 movimentos mais recentes do período filtrado. O relatório CSV (`Movimentação bancária`) vai até 5.000 linhas.

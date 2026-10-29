@@ -49,6 +49,15 @@ Cada alteração guarda o caminho feito na tela, com os mesmos nomes do sistema,
 
 A tela **Auditoria** mostra a coluna "Caminho percorrido", a ação em português ("Criou · Despesa"), e filtra por caminho, ação, tipo de registro, autor e período. Registros antigos e automáticos (como a carga de planilhas, que registra o arquivo) aparecem sem caminho. O texto é enviado pelo navegador e limitado a 300 caracteres; serve para entender o percurso, não substitui o registro do que mudou.
 
+## Caixa acumulado e abertura com contagem
+
+Migração `016-cash-accumulated-opening-count.sql` (retorno em `migrations/rollback/`; a reversão apaga a conferência da abertura e a marca dos movimentos feitos com o caixa fechado, então exporte antes).
+
+- **Depósito e saque não exigem turno aberto.** Com o caixa fechado, o movimento fica sem turno (aparece no livro como "com caixa fechado") e desconta (depósito) ou soma (saque) no **saldo acumulado**: último fechamento contado mais os movimentos feitos desde então. Com turno aberto, o movimento continua entrando no turno. Depósito maior que o saldo disponível é recusado, e o estorno também funciona sem turno aberto.
+- **Abrir caixa** abre um popup com o **saldo do sistema** já preenchido (somente leitura) e, ao lado, o campo **Valor contado**. Em branco, o caixa abre com o valor do sistema. Preenchido e diferente, a tela mostra na hora "Falta" ou "Sobra" de R$ X, aceita uma justificativa opcional e abre o caixa com o valor contado, guardando sistema, contado, quebra e justificativa no turno e na auditoria. No primeiro caixa (sem fechamento anterior) o valor contado vira o saldo inicial, sem quebra.
+- A quebra na abertura aparece no turno em andamento, na análise de divergências (coluna "Quebra na abertura" e indicador) e no CSV de fechamentos. Se o saldo do sistema mudar enquanto o popup está aberto (por exemplo, um depósito lançado em outra tela), a abertura é recusada para o usuário conferir de novo.
+- Os atalhos **Receber estoque** e **Movimentar caixa** da Visão geral abrem popup na própria tela (o primeiro com escolha do produto) e respeitam as permissões do usuário.
+
 ## Verificação
 
-Rotas exercitadas com o `server.js` real em PostgreSQL em memória (PGlite): 65 verificações de permissões, edição, exclusão, restauração, Pix para o banco e auditoria, mais 44 de bancos e caixa e 45 da carga de planilhas; 22 testes automáticos da tela. Layout conferido em 390, 768 e 1440 px. Falta repetir no PostgreSQL da Railway.
+Rotas exercitadas com o `server.js` real em PostgreSQL em memória (PGlite): 65 verificações de permissões, edição, exclusão, restauração, Pix para o banco e auditoria, mais 62 de bancos e caixa (inclui caixa acumulado e quebra na abertura) e 45 da carga de planilhas; 23 testes automáticos da tela. Layout conferido em 390, 768 e 1440 px. Falta repetir no PostgreSQL da Railway.
