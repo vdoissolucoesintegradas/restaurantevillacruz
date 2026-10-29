@@ -36,7 +36,7 @@ const flowFixture = {
   ],
 };
 
-async function launchApp({ role = 'owner', now = null, sales = [], cash = null } = {}) {
+async function launchApp({ role = 'owner', now = null, sales = [], cash = null, reportRows = [] } = {}) {
   class FixedDate extends Date {
     constructor(...args) { if (args.length) super(...args); else super(now); }
     static now() { return new Date(now).getTime(); }
@@ -72,6 +72,7 @@ async function launchApp({ role = 'owner', now = null, sales = [], cash = null }
     else if (String(url).startsWith('/api/operations/tasks')) data = [];
     else if (String(url).startsWith('/api/cash/discrepancies')) data = { rows: [], summary: { closures_with_difference: 0, positive_count: 0, positive_cents: '0', negative_count: 0, negative_cents: '0', absolute_cents: '0', net_cents: '0', opening_breaks: 0, opening_net_cents: '0' }, limits: null, alert: false, limited: false };
     else if (String(url).startsWith('/api/cash')) data = cash || { movements: [], open_session: null, balance_cents: '0' };
+    else if (String(url).startsWith('/api/reports/run')) data = { title: 'Movimentações de estoque', columns: ['data', 'produto'], rows: reportRows, filters: {}, limited: false };
     else if (String(url).startsWith('/api/bank/flow')) data = flowFixture;
     else if (String(url).startsWith('/api/bank/accounts')) data = flowFixture.accounts;
     else if (String(url).startsWith('/api/payment-methods')) data = [{ id: 'pm1', name: 'Pix', fee_applicable: false, active: true, bank_account_id: 'a1', bank_account_name: 'Itaú PJ' }, { id: 'pm2', name: 'Dinheiro', fee_applicable: false, active: true, bank_account_id: null, bank_account_name: null }];
@@ -121,6 +122,22 @@ test('caixa: a abertura traz o saldo acumulado do sistema e o campo para contar 
   assert.match(open, /Abertura conferida/);
   assert.match(open, /Falta/);
   assert.match(open, /Troco faltando/);
+});
+
+test('relatório de desperdício mostra o dia com o dia da semana', async () => {
+  const rows = [
+    { data: '2026-10-11', produto: 'Tomate', lote: 'L1', unidade: 'kg', quantidade: '2', motivo: 'Vencido', responsavel: 'Ana' },
+    { data: '2026-10-14', produto: 'Alface', lote: '', unidade: 'kg', quantidade: '1', motivo: 'Queda', responsavel: 'Caio' },
+  ];
+  const single = await openPage(await launchApp({ reportRows: rows }), 'inventory-waste', 'Relatório de desperdício');
+  assert.match(single, /Dia 11 - dom/);
+  assert.match(single, /Dia 14 - qua/);
+  assert.match(single, /title="11\/10\/2026"/);
+  const multi = await openPage(await launchApp({ reportRows: [...rows, { ...rows[0], data: '2026-11-02' }] }), 'inventory-waste', 'Relatório de desperdício');
+  assert.match(multi, /Dia 11\/10 - dom/);
+  assert.match(multi, /Dia 02\/11 - seg/);
+  const stamped = await openPage(await launchApp({ reportRows: [{ ...rows[0], data: '2026-10-12 01:30:00+00' }] }), 'inventory-waste', 'Relatório de desperdício');
+  assert.match(stamped, /Dia 11 - dom<small class="muted"> · 22:30<\/small>/);
 });
 
 test('despesas mostram saldo pendente e não oferecem pagamento a uma despesa quitada', async () => {

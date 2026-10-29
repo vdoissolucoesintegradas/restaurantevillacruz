@@ -243,3 +243,6 @@ tr.is-deleted td:last-child,tr.is-deleted .badge,tr.is-deleted .button{text-deco
 .cash-break-box{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:10px 12px;border:1px solid rgba(120,130,125,.35);border-radius:8px;font-size:12px;line-height:1.45}
 .cash-break-box[hidden]{display:none}
 .cash-open-break{margin:6px 0 0;font-size:12px;opacity:.85}
+
+/* Relatórios: "Dia 11 - dom" sem quebrar linha (a tabela rola na horizontal) */
+.day-cell{white-space:nowrap}
