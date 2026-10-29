@@ -1,6 +1,6 @@
 # Fluxo financeiro
 
-Módulo gerencial para acompanhar onde está o dinheiro da loja: caixa da loja (por turno) e contas bancárias. Migração `014-bank-accounts-and-cash-flow.sql`; retorno em `migrations/rollback/014-bank-accounts-and-cash-flow.sql` (exporte os dados antes: a reversão apaga contas e movimentos bancários).
+Módulo gerencial para acompanhar onde está o dinheiro da loja: caixa da loja (por turno) e contas bancárias. Contas, extrato e movimentações ficam na página **Bancos**; o **Fluxo financeiro** mostra os indicadores, gráficos e a projeção de contas a pagar. Cada forma de pagamento pode cair em uma conta (Pix e cartão saem do saldo da gaveta e entram no banco). Migração `014-bank-accounts-and-cash-flow.sql`; retorno em `migrations/rollback/014-bank-accounts-and-cash-flow.sql` (exporte os dados antes: a reversão apaga contas e movimentos bancários).
 
 ## Perfis
 
@@ -33,7 +33,7 @@ Módulo gerencial para acompanhar onde está o dinheiro da loja: caixa da loja (
 
 ## Estorno
 
-- Não há edição nem exclusão. O estorno cria o lançamento oposto, marca o original como estornado e guarda motivo, usuário e data.
+- Excluir é estornar: o estorno cria o lançamento oposto, marca o original como estornado e guarda motivo, usuário e data. Lançamentos manuais permitem editar descrição, categoria, observações e data; ver `docs/PERMISSOES-LANCAMENTOS-E-AUDITORIA.md`.
 - Transferência é estornada nas duas pernas. Depósito e saque também geram o movimento oposto no caixa e exigem turno aberto.
 - Um estorno não pode ser estornado. Pagamento de despesa feito pelo banco não é estornável por aqui (não existe estorno de pagamento de despesa no sistema).
 

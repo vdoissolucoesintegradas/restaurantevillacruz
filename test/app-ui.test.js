@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { effectivePermissions } = require('../permissions');
 
 const appSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8');
 
@@ -60,7 +61,7 @@ async function launchApp({ role = 'owner', now = null, sales = [] } = {}) {
   const fetch = async url => {
     let data;
     if (url === '/api/auth/csrf') data = { token: 'csrf-test' };
-    else if (url === '/api/auth/me') data = { csrf: 'csrf-test', user: { name: 'Ana Gestora', role, roleLabel: 'Gestor', mustChangePassword: false }, units: [{ id: 'unit-1', name: 'Villa Cruz' }] };
+    else if (url === '/api/auth/me') data = { csrf: 'csrf-test', user: { name: 'Ana Gestora', role, roleLabel: 'Gestor', mustChangePassword: false, permissions: [...effectivePermissions(role, null)] }, units: [{ id: 'unit-1', name: 'Villa Cruz' }] };
     else if (String(url).startsWith('/api/dashboard')) data = {
       sales: { amount: '0', target: '0', days: 0 }, sales_month: { amount: '0', days: 0 }, finance_visible: true,
       cash_cents: '0', payables_cents: '2750',
@@ -71,6 +72,10 @@ async function launchApp({ role = 'owner', now = null, sales = [] } = {}) {
     else if (String(url).startsWith('/api/cash')) data = { movements: [], open_session: null, balance_cents: '0' };
     else if (String(url).startsWith('/api/bank/flow')) data = flowFixture;
     else if (String(url).startsWith('/api/bank/accounts')) data = flowFixture.accounts;
+    else if (String(url).startsWith('/api/payment-methods')) data = [{ id: 'pm1', name: 'Pix', fee_applicable: false, active: true, bank_account_id: 'a1', bank_account_name: 'Itaú PJ' }, { id: 'pm2', name: 'Dinheiro', fee_applicable: false, active: true, bank_account_id: null, bank_account_name: null }];
+    else if (String(url).startsWith('/api/admin/users')) data = [{ id: 'u1', name: 'Ana Gestora', email: 'ana@x.com', role: 'admin', active: true, must_change_password: false, permissions: null }, { id: 'u2', name: 'Caio', email: 'caio@x.com', role: 'finance', active: true, must_change_password: false, permissions: null }, { id: 'u3', name: 'Bia', email: 'bia@x.com', role: 'operations', active: true, must_change_password: true, permissions: ['sales.view', 'sales.create', 'sales.edit'] }];
+    else if (String(url).startsWith('/api/audit/users')) data = [];
+    else if (String(url).startsWith('/api/audit')) data = [{ id: 'au1', action: 'create', entity_type: 'expense', entity_id: 'e1', reason: null, before_data: null, after_data: { total_cents: 100 }, created_at: '2026-10-14T15:00:00Z', ui_path: 'Financeiro › Despesas e notas › Registrar despesa › Salvar', user_name: 'Ana' }, { id: 'au2', action: 'update', entity_type: 'sale', entity_id: 's1', reason: null, before_data: null, after_data: null, created_at: '2026-10-13T15:00:00Z', ui_path: null, user_name: 'Caio' }];
     else if (String(url).startsWith('/api/sales')) data = sales;
     else if (String(url).startsWith('/api/dre')) data = { gross_revenue_cents: '0', deductions_cents: '0', operating_result_cents: '0', expense_groups: {} };
     else if (String(url).startsWith('/api/cash/forecast')) data = { projected_sales_cents: '0', projected_outflow_cents: '0', projected_net_cents: '0', previous_sales_cents: '0', previous_outflow_cents: '0', previous_net_cents: '0' };
@@ -127,26 +132,72 @@ async function openPage(launched, page, marker) {
   return launched.byId('page-content').innerHTML;
 }
 
-test('fluxo financeiro mostra saldos, gráficos e extrato para quem pode movimentar', async () => {
+test('fluxo financeiro mostra saldos, gráficos e projeção; contas e extrato ficam em Bancos', async () => {
   const html = await openPage(await launchApp(), 'flow', 'Total disponível');
   assert.match(html, /R\$\s?1\.900,00/);
   assert.match(html, /R\$\s?400,00/);
   assert.match(html, /class="pbi-donut"/);
   assert.match(html, /pbi-bar-in/);
   assert.match(html, /flow-coverage/);
-  assert.match(html, /id="bank-movement-form"/);
-  assert.match(html, /data-bank-new/);
+  assert.match(html, /data-page-link="banks"/);
   assert.match(html, /Itaú PJ/);
-  assert.equal((html.match(/data-bank-reverse=/g) || []).length, 1, 'só o recebimento pode ser estornado; pagamento de despesa não');
-});
-
-test('fluxo financeiro em modo consulta não oferece formulário nem ações de escrita', async () => {
-  const html = await openPage(await launchApp({ role: 'auditor' }), 'flow', 'Total disponível');
-  assert.match(html, /Total disponível/);
   assert.doesNotMatch(html, /id="bank-movement-form"/);
   assert.doesNotMatch(html, /data-bank-reverse=/);
+});
+
+test('fluxo financeiro em modo consulta não oferece ações de escrita', async () => {
+  const html = await openPage(await launchApp({ role: 'auditor' }), 'flow', 'Total disponível');
+  assert.match(html, /Total disponível/);
+  assert.doesNotMatch(html, /data-do=/);
   assert.doesNotMatch(html, /data-bank-new/);
-  assert.doesNotMatch(html, /data-bank-edit=/);
+});
+
+test('bancos: contas, atalhos por linha e banco de cada forma de pagamento', async () => {
+  const html = await openPage(await launchApp(), 'banks', 'Forma de pagamento');
+  for (const action of ['bank-deposit', 'bank-withdrawal', 'bank-transfer', 'bank-receipt', 'bank-fee', 'bank-new-account']) assert.match(html, new RegExp(`data-do="${action}"`));
+  assert.equal((html.match(/data-ctx="bankacc"/g) || []).length, 2, 'uma linha de menu por conta');
+  assert.equal((html.match(/data-ctx="bankmove"/g) || []).length, 2, 'uma linha de menu por movimento');
+  assert.match(html, /data-ctx-open/);
+  assert.match(html, /data-pm-bank="pm1"/);
+  assert.match(html, /<option value="a1" selected>Itaú PJ<\/option>/, 'o Pix já cai no Itaú PJ');
+  assert.match(html, /Origem/);
+  assert.doesNotMatch(html, /id="bank-movement-form"/, 'o formulário só abre em popup');
+});
+
+test('bancos em modo consulta: vê contas e extrato, sem botões nem escolha de banco', async () => {
+  const html = await openPage(await launchApp({ role: 'auditor' }), 'banks', 'Forma de pagamento');
+  assert.match(html, /Itaú PJ/);
+  assert.doesNotMatch(html, /data-do="bank-/);
+  assert.doesNotMatch(html, /data-pm-bank=/);
+});
+
+test('despesas: linhas ganham atalhos sem repetir o botão de pagar', async () => {
+  const html = await openPage(await launchApp(), 'expenses', 'Fornecedor parcial');
+  assert.match(html, /data-ctx="expense"/);
+  assert.equal((html.match(/data-action="pay-expense"/g) || []).length, 1);
+});
+
+test('usuários: lista com permissões e botão de novo usuário em popup (só administrador)', async () => {
+  const html = await openPage(await launchApp({ role: 'admin' }), 'users', 'Usuários da unidade');
+  assert.match(html, /data-do="user-new"/);
+  assert.match(html, /data-ctx="user"/);
+  assert.match(html, /Padrão do perfil/);
+  assert.match(html, /Personalizado · 3 permissões/);
+  assert.doesNotMatch(html, /id="user-form"/);
+});
+
+test('auditoria mostra o caminho percorrido e os nomes em português', async () => {
+  const html = await openPage(await launchApp({ role: 'owner' }), 'audit', 'Caminho percorrido');
+  assert.match(html, /Financeiro › Despesas e notas › Registrar despesa › Salvar/);
+  assert.match(html, /Criou<\/strong> · Despesa/);
+  assert.match(html, /Sem caminho \(registro antigo ou automático\)/);
+});
+
+test('operação não vê botões de editar acesso nem de cadastrar despesa na visão geral', async () => {
+  const { byId } = await launchApp({ role: 'operations' });
+  const html = byId('page-content').innerHTML;
+  assert.doesNotMatch(html, /data-action="new-expense"/);
+  assert.match(html, /data-action="new-sale"/);
 });
 
 test('visão geral desenha o faturamento diário em gráfico de área com mês anterior e rosca por canal', async () => {
