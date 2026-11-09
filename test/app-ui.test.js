@@ -17,6 +17,7 @@ function element() {
     addEventListener() {},
     insertAdjacentHTML(_where, html) { this.innerHTML += html; },
     querySelector() { return element(); },
+    querySelectorAll() { return []; },
   };
 }
 
@@ -84,10 +85,12 @@ async function launchApp({ role = 'owner', now = null, sales = [], cash = null, 
     else if (String(url).startsWith('/api/cash/forecast')) data = { projected_sales_cents: '0', projected_outflow_cents: '0', projected_net_cents: '0', previous_sales_cents: '0', previous_outflow_cents: '0', previous_net_cents: '0' };
     else if (String(url).startsWith('/api/expenses')) data = expenseRows;
     else if (String(url).startsWith('/api/categories')) data = [];
+    else if (String(url).startsWith('/api/expense-natures')) data = [{ id: 'n1', name: 'Manutenção', expense_count: 2 }, { id: 'n2', name: 'Insumos', expense_count: 0 }];
+    else if (String(url).startsWith('/api/settings')) data = {};
     else throw new Error(`Endpoint inesperado no teste: ${url}`);
     return { status: 200, ok: true, headers: { get: () => 'application/json' }, json: async () => data };
   };
-  vm.runInNewContext(appSource, { document, fetch, Headers, Intl, BigInt, Date: now ? FixedDate : Date, URLSearchParams, setTimeout, console, location: { search: '' } });
+  vm.runInNewContext(appSource, { document, fetch, Headers, Intl, BigInt, Date: now ? FixedDate : Date, URLSearchParams, setTimeout, console, location: { search: '' }, window: {} });
   for (let attempt = 0; attempt < 20 && !byId('page-content').innerHTML.includes('Ações do dia'); attempt++) {
     await new Promise(resolve => setTimeout(resolve, 0));
   }
@@ -255,4 +258,33 @@ test('visão geral desenha o faturamento diário em gráfico de área com mês a
   assert.match(html, /class="kpi-spark"/);
   assert.match(html, /class="pbi-donut"/);
   assert.ok(html.indexOf('data-dashboard-block="monthly-sales"') < html.indexOf('data-dashboard-block="daily-alerts"'), 'indicadores principais vêm antes dos alertas');
+});
+
+test('despesas: "Contas e notas" tem filtros de busca, status, categoria, natureza e período', async () => {
+  const html = await openPage(await launchApp(), 'expenses', 'Fornecedor parcial');
+  assert.match(html, /id="expense-list-filters"/);
+  for (const key of ['q', 'status', 'category', 'nature', 'date_field', 'from', 'to']) assert.match(html, new RegExp(`data-expense-filter="${key}"`));
+  assert.equal((html.match(/data-expense-row/g) || []).length, 2, 'cada lançamento pode ser filtrado');
+  assert.match(html, /Últimos lançamentos primeiro/);
+  assert.match(html, /data-expense-filter-empty hidden/);
+});
+
+test('configurações: naturezas de despesa podem ser adicionadas, editadas e removidas', async () => {
+  const html = await openPage(await launchApp({ role: 'owner' }), 'settings', 'Naturezas de despesa');
+  assert.match(html, /data-do="nature-new"/);
+  assert.equal((html.match(/data-do="nature-edit"/g) || []).length, 2);
+  assert.equal((html.match(/data-do="nature-delete"/g) || []).length, 2);
+  assert.match(html, /2 lançamentos/);
+});
+
+test('usuários: administrador pode excluir usuários pela lista', async () => {
+  const html = await openPage(await launchApp({ role: 'admin' }), 'users', 'Usuários da unidade');
+  assert.match(html, /data-user-delete="u2"/);
+});
+
+test('permissões: só quem altera configurações pode mexer nas naturezas de despesa', () => {
+  const { permissionFor } = require('../permissions');
+  for (const [method, url] of [['POST', '/api/expense-natures'], ['PATCH', '/api/expense-natures/n1'], ['DELETE', '/api/expense-natures/n1']]) assert.equal(permissionFor(method, url), 'settings.manage');
+  assert.equal(effectivePermissions('finance', null).has('settings.manage'), false);
+  assert.equal(effectivePermissions('owner', null).has('settings.manage'), true);
 });

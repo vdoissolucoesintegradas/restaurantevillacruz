@@ -80,7 +80,7 @@ Referências operacionais: [Deployments Railway](https://docs.railway.com/deploy
 - **Faturamento:** lançamento por dia/canal, meta diária e anexo opcional.
 - **Estoque:** produto, lote, fornecedor, custo, validade, saldo, entrada, consumo, perda, cortesia, ajuste e FEFO.
 - **Compras:** pedidos com vários itens, unidade de compra e conversão; recebimentos parciais criam lotes vinculados ao pedido e atualizam o estoque. Indicadores de fornecedor consideram apenas pedidos registrados depois da funcionalidade.
-- **Despesas/notas:** competência, emissão, vencimento, categoria, parcelas, status e comprovantes privados.
+- **Despesas/notas:** competência, emissão, vencimento, categoria, natureza (lista configurável em Configurações), parcelas, status e comprovantes privados. "Contas e notas" mostra os últimos lançamentos primeiro e tem filtros por busca, status, categoria, natureza e período (emissão, vencimento ou competência).
 - **Recorrências e documentos:** modelos de despesa mensal/trimestral/anual geram rascunhos para revisão; central de anexos e histórico de importações permitem localizar registros e rejeições.
 - **Pagamentos:** pagamento parcial ou total, método e responsável. Só impacta o livro do caixa reservado quando o usuário marca que saiu desse caixa; pagamentos da despesa continuam registrados por competência na DRE.
 - **Caixa reservado:** abertura de turno, entrada/saída, saldo esperado, valor contado, diferença e justificativa obrigatória.
@@ -88,7 +88,7 @@ Referências operacionais: [Deployments Railway](https://docs.railway.com/deploy
 - **DRE:** receita confirmada por data de faturamento e despesas por competência; pagamentos não são somados novamente. O CMV é sinalizado como pendente de definição.
 - **Relatórios:** consultas executáveis de faturamento, despesas, caixa, fechamentos de turno, posição e movimentações de estoque e linhas de origem da DRE; filtros por período, busca e status aplicável; configurações reexecutáveis e CSV coerente com a consulta. Limite de 5.000 linhas por execução. Na tela, o dia aparece com o dia da semana ("Dia 11 - dom"; com mais de um mês no resultado, "Dia 11/10 - dom"); o CSV mantém a data original.
 - **Excel:** prévia de uma aba XLSX e mapeamento para faturamento, despesa ou produto; rejeições aparecem no relatório de importação. Permissões por usuário, editar/excluir/duplicar lançamentos com o botão direito, página Bancos, popups padrão e auditoria com o caminho percorrido estão descritos em `docs/PERMISSOES-LANCAMENTOS-E-AUDITORIA.md`. A **carga das planilhas do Villa Cruz** (caixa, notas fiscais, CMV e DRE) lê várias abas de uma vez, mostra a prévia e só grava após confirmação; ver `docs/CARGA-PLANILHAS.md`.
-- **Administração:** usuários e perfis com desativação/reativação, categorias, meta percentual por vigência, configurações de alertas de caixa e auditoria com filtros.
+- **Administração:** usuários e perfis com edição de nome/e-mail, desativação/reativação e exclusão (quem já tem histórico fica arquivado, fora da lista e sem acesso, para preservar a auditoria), categorias, naturezas de despesa, meta percentual por vigência, configurações de alertas de caixa e auditoria com filtros.
 
 ## Arquivos importantes
 

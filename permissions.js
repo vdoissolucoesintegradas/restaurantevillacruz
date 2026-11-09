@@ -19,7 +19,7 @@ const MODULES = [
   ['import', 'Importar Excel', [['import.use', 'Importar planilhas e carga histórica', [A, O, F]]]],
   ['attachments', 'Documentos', [['attachments.view', 'Ver', [A, O, F, U]], ['attachments.upload', 'Anexar', [A, O, F, P]]]],
   ['audit', 'Auditoria', [['audit.view', 'Ver', [A, O, U]]]],
-  ['settings', 'Configurações', [['settings.manage', 'Alterar configurações, categorias e formas de pagamento', [A, O]]]]
+  ['settings', 'Configurações', [['settings.manage', 'Alterar configurações, categorias, formas de pagamento e naturezas de despesa', [A, O]]]]
 ];
 
 const PERMISSIONS = {};
@@ -44,6 +44,7 @@ const RULES = [
   ['GET', '/api/purchase-orders', 'purchases.view'], ['GET', '/api/suppliers/performance', 'purchases.view'],
   ['POST', '/api/purchase-orders', 'purchases.create'], ['POST', '/api/purchase-orders/:id/receive', 'purchases.receive'],
   ['POST', '/api/payment-methods', 'settings.manage'], ['PATCH', '/api/payment-methods/:id', 'settings.manage'],
+  ['POST', '/api/expense-natures', 'settings.manage'], ['PATCH', '/api/expense-natures/:id', 'settings.manage'], ['DELETE', '/api/expense-natures/:id', 'settings.manage'],
   ['GET', '/api/cash', 'cash.view'], ['GET', '/api/cash/discrepancies', 'cash.analyze'], ['GET', '/api/cash/forecast', 'cash.analyze'], ['GET', '/api/reports/cash.csv', 'cash.analyze'],
   ['POST', '/api/settings/cash-discrepancy-alerts', 'settings.manage'],
   ['POST', '/api/cash/open', 'cash.shift'], ['POST', '/api/cash/close', 'cash.shift'], ['POST', '/api/cash/movements', 'cash.move'],
