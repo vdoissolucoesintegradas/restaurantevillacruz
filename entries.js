@@ -1,4 +1,5 @@
 'use strict';
+const {cashDetails,saveDetails}=require('./traceability');
 // Editar, excluir (visível, com restauração) e manter coerentes os lançamentos de faturamento,
 // despesas, pagamentos, movimentos de caixa e movimentos bancários.
 module.exports = function registerEntryRoutes(app, d) {
@@ -58,7 +59,10 @@ module.exports = function registerEntryRoutes(app, d) {
     const old = (await c.query('SELECT * FROM expenses WHERE id=$1 AND unit_id=$2 FOR UPDATE', [req.params.id, u.id])).rows[0]; if (!old) return null;
     if (old.status === 'cancelled') return { error: 'Esta despesa foi excluída ou cancelada. Restaure antes de editar.' };
     const b = req.body || {}, paid = await paidOf(c, old.id), pick = (k, cur) => (b[k] === undefined ? cur : b[k]);
-    const supplier = text(pick('supplier', old.supplier), 160), description = text(pick('description', old.description), 250), issue = pick('issue_date', dateText(old.issue_date));
+    let supplierId = b.supplier_id === undefined ? old.supplier_id : (text(b.supplier_id, 80) || null);
+    let supplier = text(pick('supplier', old.supplier), 160);
+    if (supplierId) { const linked = (await c.query('SELECT id,name FROM suppliers WHERE id=$1 AND unit_id=$2 AND active', [supplierId, u.id])).rows[0]; if (!linked) return { error: 'Fornecedor inválido para esta unidade.', status: 400 }; supplier = linked.name; }
+    const description = text(pick('description', old.description), 250), issue = pick('issue_date', dateText(old.issue_date));
     const accrual = b.accrual_date !== undefined ? (validDate(b.accrual_date) ? b.accrual_date : issue) : (b.issue_date !== undefined && dateText(old.accrual_date) === dateText(old.issue_date) ? issue : dateText(old.accrual_date));
     const total = b.total === undefined ? Number(old.total_cents) : parseMoney(b.total), count = b.installment_count === undefined ? old.installment_count : Math.max(1, Math.min(120, Number(b.installment_count)));
     const due = b.due_date === undefined ? (old.due_date ? dateText(old.due_date) : null) : (b.due_date || null);
@@ -70,8 +74,10 @@ module.exports = function registerEntryRoutes(app, d) {
     if (categoryId && categoryId !== old.category_id && !(await c.query("SELECT 1 FROM categories WHERE id=$1 AND unit_id=$2 AND kind='expense'", [categoryId, u.id])).rowCount) return { error: 'Categoria financeira inválida para esta unidade.', status: 400 };
     const method = b.payment_method === undefined ? old.payment_method : await paymentMethodLabel(u.id, b.payment_method);
     if (structural) { await c.query('DELETE FROM expense_installments WHERE expense_id=$1', [old.id]); for (const p of installmentPlan(total, count, due)) await c.query('INSERT INTO expense_installments(id,expense_id,installment_number,amount_cents,due_date) VALUES($1,$2,$3,$4,$5)', [id(), old.id, p.n, p.amount, p.due]); }
-    const row = (await c.query('UPDATE expenses SET supplier=$1,document_number=$2,issue_date=$3,accrual_date=$4,category_id=$5,description=$6,total_cents=$7,due_date=$8,payment_method=$9,nature=$10,installment_count=$11,notes=$12,updated_at=now() WHERE id=$13 RETURNING *',
-      [supplier, b.document_number === undefined ? old.document_number : text(b.document_number, 120) || null, issue, accrual, categoryId, description, total, due, method, b.nature === undefined ? old.nature : text(b.nature, 100) || null, count, b.notes === undefined ? old.notes : text(b.notes, 2000) || null, old.id])).rows[0];
+    const purchaseOrderId = b.purchase_order_id === undefined ? old.purchase_order_id : (text(b.purchase_order_id, 80) || null);
+    if (purchaseOrderId && !(await c.query('SELECT 1 FROM purchase_orders WHERE id=$1 AND unit_id=$2 AND supplier_id=$3', [purchaseOrderId, u.id, supplierId])).rowCount) return { error: 'O pedido escolhido não pertence a este fornecedor.', status: 400 };
+    const row = (await c.query('UPDATE expenses SET supplier=$1,supplier_id=$2,purchase_order_id=$3,document_number=$4,issue_date=$5,accrual_date=$6,category_id=$7,description=$8,total_cents=$9,due_date=$10,payment_method=$11,nature=$12,installment_count=$13,notes=$14,updated_at=now() WHERE id=$15 RETURNING *',
+      [supplier, supplierId, purchaseOrderId, b.document_number === undefined ? old.document_number : text(b.document_number, 120) || null, issue, accrual, categoryId, description, total, due, method, b.nature === undefined ? old.nature : text(b.nature, 100) || null, count, b.notes === undefined ? old.notes : text(b.notes, 2000) || null, old.id])).rows[0];
     await audit(c, req, u.id, 'update', 'expense', old.id, old, row, reasonOf(req)); return row;
   })));
   app.delete('/api/expenses/:id', run((req, res, u) => inTx(async c => {
@@ -181,6 +187,7 @@ module.exports = function registerEntryRoutes(app, d) {
     const row = (await c.query('UPDATE cash_movements SET session_id=$1,occurred_at=$2,amount_cents=$3,gross_amount_cents=$4,fee_percent=$5,fee_cents=$6,category=$7,description=$8,payment_method=$9,responsible=$10,notes=$11,affects_drawer=$12,updated_at=now() WHERE id=$13 RETURNING *',
       [sessionId, `${day}${DAY}`, gross - fee, gross, rate, fee, category, description, methodRow.name, responsible, b.notes === undefined ? m.notes : text(b.notes, 1000) || null, drawer, m.id])).rows[0];
     await makeReceipt(c, u, req, row, methodRow, day);
+    const details=cashDetails(b);await saveDetails(c,'cash_movements',u.id,m.id,details);Object.assign(row,details);
     await audit(c, req, u.id, 'update', 'cash_movement', m.id, m, row, reasonOf(req)); return row;
   })));
   app.delete('/api/cash/movements/:id', run((req, res, u) => inTx(async c => {

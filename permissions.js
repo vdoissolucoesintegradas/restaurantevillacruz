@@ -6,6 +6,7 @@ const ALL = [A, O, F, P, U];
 
 // [módulo, rótulo na tela, [[chave, rótulo, perfis com a chave por padrão], ...]]
 const MODULES = [
+  ['reconciliation','Conferência', [['reconciliation.view','Consultar conferências e pendências',[A,O,F,U]],['reconciliation.manage','Registrar conferência bancária',[A,O,F]]]],
   ['overview', 'Visão geral', [['overview.view', 'Ver painel e checklist', ALL], ['tasks.manage', 'Adicionar e concluir tarefas', [A, O, F, P]]]],
   ['sales', 'Faturamento e CMV', [['sales.view', 'Ver', ALL], ['sales.create', 'Lançar', [A, O, F, P]], ['sales.edit', 'Editar', [A, O, F]], ['sales.delete', 'Excluir e restaurar', [A, O, F]]]],
   ['expenses', 'Despesas e notas', [['expenses.view', 'Ver', [A, O, F, U]], ['expenses.create', 'Registrar e gerar recorrências', [A, O, F]], ['expenses.edit', 'Editar', [A, O, F]], ['expenses.delete', 'Excluir e restaurar', [A, O, F]], ['expenses.pay', 'Registrar, editar e excluir pagamentos', [A, O, F]]]],
@@ -28,6 +29,8 @@ const KEYS = Object.keys(PERMISSIONS);
 
 // [método, caminho, chave]. Rotas que não aparecem aqui seguem apenas o allow(...) do servidor.
 const RULES = [
+  ['GET','/api/reconciliation','reconciliation.view'], ['POST','/api/reconciliation','reconciliation.manage'],
+  ['GET','/api/products/:id/history','inventory.view'], ['GET','/api/cash/movements/:id/history','cash.view'],
   ['GET', '/api/dashboard', 'overview.view'], ['GET', '/api/operations/tasks', 'overview.view'],
   ['POST', '/api/operations/tasks', 'tasks.manage'], ['POST', '/api/operations/tasks/:id', 'tasks.manage'],
   ['GET', '/api/sales', 'sales.view'], ['GET', '/api/sales/comparison', 'sales.view'], ['GET', '/api/reports/sales.csv', 'sales.view'],
