@@ -387,3 +387,24 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 input:focus,select:focus,textarea:focus{box-shadow:none!important;border-color:var(--user-accent)!important}
 .badge,.status-dot{box-shadow:none!important;animation:none!important}
 .status-dot{background:var(--user-accent)!important}
+
+/* No modo escuro, toda a base visual usa azuis sólidos em vez de preto. */
+html[data-theme="dark"]{--ink:#edf3ff;--muted:#b2c2dd;--line:#354d70;--paper:#102442;--card:#193454;--soft:#25476d;--shadow:none;--solid-panel:#193454;--solid-page:#102442;color-scheme:dark}
+html[data-theme="dark"] body,html[data-theme="dark"] .app-shell,html[data-theme="dark"] .main-content{background:#102442!important;color:#edf3ff}
+html[data-theme="dark"] .sidebar,html[data-theme="dark"] .app-topbar{background:var(--user-nav,#14245d)!important}
+html[data-theme="dark"] .card,html[data-theme="dark"] .kpi-card,html[data-theme="dark"] .dashboard-block[data-dashboard-block="today-result"],html[data-theme="dark"] .cash-session-summary,html[data-theme="dark"] .cash-balance-card,html[data-theme="dark"] .flow-coverage,html[data-theme="dark"] .alert-row,html[data-theme="dark"] .mini-kpi,html[data-theme="dark"] .dashboard-dre-metrics article,html[data-theme="dark"] .dashboard-forecast-metric,html[data-theme="dark"] .period-filter-card,html[data-theme="dark"] .table-card,html[data-theme="dark"] .form-card,html[data-theme="dark"] .section-card,html[data-theme="dark"] .dashboard-chart-card{background:#193454!important;background-image:none!important;color:#edf3ff!important;border-color:#354d70!important;box-shadow:none!important}
+html[data-theme="dark"] .dashboard-result-highlight,html[data-theme="dark"] .cash-session-metric,html[data-theme="dark"] th,html[data-theme="dark"] .progress-track,html[data-theme="dark"] .dashboard-channel-track,html[data-theme="dark"] .flow-coverage-track{background:#25476d!important;color:#e5efff;border-color:#3d5d83!important;box-shadow:none!important}
+html[data-theme="dark"] .form-grid input,html[data-theme="dark"] .form-grid select,html[data-theme="dark"] .form-grid textarea,html[data-theme="dark"] .form-stack input,html[data-theme="dark"] .form-stack select,html[data-theme="dark"] .form-stack textarea,html[data-theme="dark"] .field input,html[data-theme="dark"] .field select,html[data-theme="dark"] .field textarea,html[data-theme="dark"] .appearance-settings-form input[name="accent_hex"]{background:#122a49!important;color:#edf3ff!important;border-color:#45628a!important}
+html[data-theme="dark"] .section-head h2,html[data-theme="dark"] .table-toolbar h2,html[data-theme="dark"] .form-card h2,html[data-theme="dark"] .kpi-value,html[data-theme="dark"] .money,html[data-theme="dark"] .dashboard-result-highlight strong,html[data-theme="dark"] .cash-balance-value,html[data-theme="dark"] .cash-session-metric strong{color:#f3f7ff!important;text-shadow:none!important}
+html[data-theme="dark"] td,html[data-theme="dark"] .section-head p,html[data-theme="dark"] .help-text,html[data-theme="dark"] .hint,html[data-theme="dark"] .kpi-foot,html[data-theme="dark"] .empty-state{color:#dce8fb!important;border-color:#354d70!important}
+html[data-theme="dark"] tbody tr:nth-child(even),html[data-theme="dark"] tbody tr:hover{background:#25476d!important}
+html[data-theme="dark"] .kpi-card::after{display:none!important}
+html[data-theme="dark"] .kpi-icon{background:#25476d!important;color:var(--user-accent)!important;box-shadow:none!important}
+html[data-theme="dark"] .kpi-ring{background:var(--user-accent)!important;box-shadow:none!important}
+html[data-theme="dark"] .nav-item.active{background:var(--user-accent)!important;color:#17140f!important}
+html[data-theme="dark"] .nav-item.active .nav-icon{color:#17140f!important}
+
+.overview-date-filter{display:flex;align-items:center;gap:12px;max-width:300px;padding:4px 0 12px;color:var(--muted);font-size:12px;font-weight:700}
+.overview-date-filter input{min-height:40px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit}
+.advanced-nav{display:none!important}
+@media(max-width:700px){.overview-date-filter{width:100%;max-width:none;justify-content:space-between}.overview-date-filter input{flex:1;min-width:0}.dashboard-layout>.dashboard-block.dashboard-wide{min-width:0}}
