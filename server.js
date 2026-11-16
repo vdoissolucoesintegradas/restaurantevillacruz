@@ -211,7 +211,12 @@ app.patch('/api/auth/appearance', requireAuth, async (req, res, next) => {
     const appearance=req.body?.appearance;
     if(!appearance||typeof appearance!=='object'||Array.isArray(appearance))return fail(res,400,'Preferência visual inválida.');
     const mode=appearance.mode==='dark'?'dark':'light',preset=text(appearance.preset,24),accent=text(appearance.accent,7),nav=text(appearance.nav,7);
-    if(!/^#[0-9a-f]{6}$/i.test(accent)||!/^#[0-9a-f]{6}$/i.test(nav)||!['villa','confianca','equilibrio','energia','criatividade','azul-profundo','oceano','vinho','floresta','grafite','lavanda','custom'].includes(preset))return fail(res,400,'Defina um tema e cores válidas.');
+    if(!/^#[0-9a-f]{6}$/i.test(accent)||!/^#[0-9a-f]{6}$/i.test(nav)||!['villa','vermelho','confianca','equilibrio','amarelo','energia','criatividade','preto','branco','grafite-neutro','azul-profundo','oceano','vinho','floresta','grafite','lavanda','custom'].includes(preset))return fail(res,400,'Defina um tema e cores válidas.');
+    let progressColors;
+    if(appearance.progressColors!==undefined){
+      if(!Array.isArray(appearance.progressColors)||appearance.progressColors.length!==4||!appearance.progressColors.every(color=>typeof color==='string'&&/^#[0-9a-f]{6}$/i.test(color)))return fail(res,400,'Informe exatamente quatro cores válidas para as barras de evolução.');
+      progressColors=appearance.progressColors;
+    }
     const colorKeys=['page','panel','soft','control','text','muted','border','header','nav'],colors={};
     if(appearance.colors!==undefined&&(!appearance.colors||typeof appearance.colors!=='object'||Array.isArray(appearance.colors)))return fail(res,400,'A paleta visual é inválida.');
     for(const colorMode of ['light','dark']){
@@ -226,7 +231,7 @@ app.patch('/api/auth/appearance', requireAuth, async (req, res, next) => {
         colors[colorMode][key]=color;
       }
     }
-    const value={mode,preset,accent,nav,...(Object.keys(colors).length?{colors}:{})};
+    const value={mode,preset,accent,nav,...(Object.keys(colors).length?{colors}:{}),...(progressColors?{progressColors}:{})};
     await pool.query('UPDATE users SET appearance=$1::jsonb,updated_at=now() WHERE id=$2',[JSON.stringify(value),req.session.user.id]);
     res.json({appearance:value});
   } catch(e){next(e);}
