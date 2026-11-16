@@ -328,3 +328,24 @@ tr.is-deleted td:last-child,tr.is-deleted .badge,tr.is-deleted .button{text-deco
 
 /* Relatórios: "Dia 11 - dom" sem quebrar linha (a tabela rola na horizontal) */
 .day-cell{white-space:nowrap}
+
+/* Overrides finais: o tema escolhido precisa prevalecer também sobre os acentos do tema base. */
+:root{--t-amber:var(--user-accent);--t-amber-rgb:194,138,40;--t-teal:var(--user-accent);--t-teal-rgb:194,138,40;--brand2:var(--user-accent)}
+.button.primary,.button.primary:hover{background:var(--user-accent);color:#17140f;box-shadow:none}
+.button.secondary:hover{border-color:color-mix(in srgb,var(--user-accent) 60%,transparent);background:color-mix(in srgb,var(--user-accent) 8%,#fff);box-shadow:0 0 0 3px color-mix(in srgb,var(--user-accent) 14%,transparent)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--user-accent);outline-offset:2px;box-shadow:0 0 0 4px color-mix(in srgb,var(--user-accent) 20%,transparent)}
+input:focus,select:focus,textarea:focus{border-color:var(--user-accent)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--user-accent) 18%,transparent)}
+tbody tr:hover td{background:color-mix(in srgb,var(--user-accent) 7%,transparent)}
+.mini-kpi{border-left-color:var(--user-accent)}
+[data-dashboard-block="today-result"] .text-link,.cash-session-label,.cash-card-kicker{color:var(--user-accent)}
+.dashboard-priority>.card,.dashboard-forecast-card{border-color:color-mix(in srgb,var(--user-accent) 38%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--user-accent) 10%,transparent),0 14px 30px -24px color-mix(in srgb,var(--user-accent) 60%,transparent)}
+.progress-fill{background:var(--user-accent);box-shadow:0 0 12px color-mix(in srgb,var(--user-accent) 40%,transparent)}
+html[data-theme="light"] body,html[data-theme="light"] .app-shell,html[data-theme="light"] .main-content{background:#f3f4f1;color:#202522}
+html[data-theme="light"] .page-heading h1{color:#202522}
+html[data-theme="light"] .card,html[data-theme="light"] .kpi-card,html[data-theme="light"] .period-filter-card,html[data-theme="light"] .table-card,html[data-theme="light"] .form-card,html[data-theme="light"] .section-card,html[data-theme="light"] .dashboard-chart-card{background:#fff;color:#202522;border-color:#e2e6e2}
+html[data-theme="light"] .page-topline,html[data-theme="light"] .today-label{color:#75817a}
+html[data-theme="light"] .section-head h2,html[data-theme="light"] .table-toolbar h2,html[data-theme="light"] .form-card h2,html[data-theme="light"] .kpi-value{color:#202522}
+html[data-theme="light"] .section-head p,html[data-theme="light"] .help-text,html[data-theme="light"] .hint,html[data-theme="light"] .kpi-foot{color:#68736c}
+html[data-theme="light"] .form-grid input,html[data-theme="light"] .form-grid select,html[data-theme="light"] .form-grid textarea,html[data-theme="light"] .form-stack input,html[data-theme="light"] .form-stack select,html[data-theme="light"] .form-stack textarea,html[data-theme="light"] .field input,html[data-theme="light"] .field select,html[data-theme="light"] .field textarea{background:#fff;color:#202522;border-color:#dfe6e2}
+html[data-theme="light"] th{background:#f1f5f2;color:#5c6960}
+html[data-theme="light"] td{color:#39443d;border-color:#e7ebe8}

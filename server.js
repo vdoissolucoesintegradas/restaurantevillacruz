@@ -200,9 +200,20 @@ app.post('/api/auth/change-password', authLimit, requireAuth, async (req, res, n
 app.get('/api/auth/me', requireAuth, async (req, res, next) => {
   try {
     const units = await pool.query(`SELECT b.id,b.name FROM business_units b JOIN user_units u ON u.unit_id=b.id WHERE u.user_id=$1 AND b.active ORDER BY b.name`, [req.session.user.id]);
-    const me = (await pool.query('SELECT role,permissions FROM users WHERE id=$1', [req.session.user.id])).rows[0] || {};
-    res.json({ user: { ...req.session.user, role: me.role || req.session.user.role, permissions: [...permissions.effectivePermissions(me.role || req.session.user.role, me.permissions)] }, units: units.rows, csrf: req.session.csrf });
+    const me = (await pool.query('SELECT role,permissions,appearance FROM users WHERE id=$1', [req.session.user.id])).rows[0] || {};
+    res.json({ user: { ...req.session.user, role: me.role || req.session.user.role, appearance: me.appearance || {}, permissions: [...permissions.effectivePermissions(me.role || req.session.user.role, me.permissions)] }, units: units.rows, csrf: req.session.csrf });
   } catch (e) { next(e); }
+});
+app.patch('/api/auth/appearance', requireAuth, async (req, res, next) => {
+  try {
+    const appearance=req.body?.appearance;
+    if(!appearance||typeof appearance!=='object'||Array.isArray(appearance))return fail(res,400,'Preferência visual inválida.');
+    const mode=appearance.mode==='dark'?'dark':'light',preset=text(appearance.preset,24),accent=text(appearance.accent,7),nav=text(appearance.nav,7);
+    if(!/^#[0-9a-f]{6}$/i.test(accent)||!/^#[0-9a-f]{6}$/i.test(nav)||!['villa','oceano','vinho','floresta','grafite','lavanda','custom'].includes(preset))return fail(res,400,'Defina um tema e cores válidas.');
+    const value={mode,preset,accent,nav};
+    await pool.query('UPDATE users SET appearance=$1::jsonb,updated_at=now() WHERE id=$2',[JSON.stringify(value),req.session.user.id]);
+    res.json({appearance:value});
+  } catch(e){next(e);}
 });
 app.post('/api/auth/logout', requireAuth, (req, res, next) => req.session.destroy(e => e ? next(e) : res.clearCookie('villa.sid', { httpOnly: true, sameSite: 'lax', secure: isProd }).json({ ok: true })));
 
