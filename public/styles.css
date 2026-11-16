@@ -758,6 +758,12 @@ body.sidebar-collapsed .sidebar-collapse{right:-4px;top:4px}
 .dre-validation-card{margin:0 0 14px;padding:15px}.dre-validation-card ul{display:grid;gap:7px;margin:0;padding-left:20px;color:#66736c;font-size:11px;line-height:1.45}
 @media(max-width:1000px){.command-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.command-strip>.button{justify-self:start}.pending-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}.pending-summary{grid-column:1/-1;justify-content:flex-start}.daily-close-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:767px){.page-heading>div:first-child{width:100%;flex-basis:auto}.command-strip{grid-template-columns:1fr}.command-strip>.button{width:100%}.command-strip>small{grid-column:1;text-align:left}.pending-toolbar{grid-template-columns:1fr 1fr}.pending-toolbar>.button{grid-column:1/-1;width:100%}.pending-queue{grid-template-columns:1fr}.pending-item{padding:14px}.daily-close-panel{padding:14px}.daily-close-grid{grid-template-columns:1fr 1fr}.daily-close-panel .form-actions{align-items:stretch;flex-direction:column}.daily-close-panel .form-actions .button{width:100%}}
+/* Modo financeiro enxuto: escala desktop solicitada e identidade sem logotipo na navegação. */
+.brand-name{display:block;margin:0 auto;color:#f4f7f5;font:800 21px/1.1 Manrope,Arial,sans-serif;letter-spacing:-.7px;text-align:center}
+.mobile-brand-name{display:block;flex:0 0 auto;color:#fff;font:800 12px/1 Manrope,Arial,sans-serif;letter-spacing:-.2px}
+body.sidebar-collapsed .brand-name{font-size:0;width:28px;height:28px;border-radius:8px;background:#1a777a}
+@media(min-width:768px){body{zoom:.85}}
+@media(max-width:767px){body{zoom:1}.mobile-brand-name{font-size:11px}}
 @media(max-width:420px){.pending-toolbar{grid-template-columns:1fr}.pending-toolbar>.button,.pending-summary{grid-column:1}.pending-summary{display:grid;grid-template-columns:1fr}.pending-item-head{align-items:flex-start;flex-direction:column}.pending-item dl,.daily-close-grid{grid-template-columns:1fr}.pending-actions,.pending-owner{align-items:stretch;flex-direction:column}.pending-actions .button,.pending-owner .button{width:100%}}
 @media(min-width:768px){#purchase-order-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .user-form-note{grid-column:1/-1;margin:0}

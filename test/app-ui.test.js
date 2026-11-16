@@ -104,13 +104,14 @@ test('painel mostra alertas acionáveis e direciona para os módulos', async () 
   const html = byId('page-content').innerHTML;
   assert.match(html, /data-page-link="sales"/);
   assert.match(html, /data-page-link="expenses"/);
-  assert.match(html, /data-page-link="inventory"/);
+  assert.doesNotMatch(html, /data-page-link="inventory"/);
   assert.match(html, /data-page-link="cash"/);
   assert.match(html, /Faturamento de hoje não lançado/);
   assert.match(html, /Faturamento ausente/);
   assert.match(html, /Abrir centro de comando/);
-  assert.match(html, /data-do="stock-receive-quick"/);
+  assert.doesNotMatch(html, /data-do="stock-receive-quick"/);
   assert.match(html, /data-do="cash-movement-quick"/);
+  assert.doesNotMatch(html, /data-page="inventory"/);
   assert.doesNotMatch(html, /data-page-link="inventory">＋ Receber estoque/);
 });
 
