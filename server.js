@@ -280,6 +280,87 @@ app.post('/api/operations/tasks/:id',allow('admin','owner','finance','operations
   }catch(e){next(e);}
 });
 
+async function dailyManagementSnapshot(queryable,unitId,businessDate){
+  const [sales,receipts,openCash,closedCash,unclassified]=await Promise.all([
+    queryable.query("SELECT count(*)::int entries,COALESCE(sum(amount_cents),0)::text amount_cents,count(DISTINCT channel)::int channels FROM sales WHERE unit_id=$1 AND sale_date=$2 AND status='confirmed'",[unitId,businessDate]),
+    queryable.query("SELECT count(*)::int entries,COALESCE(sum(amount_cents),0)::text amount_cents FROM sale_receipts WHERE unit_id=$1 AND settlement_on<=$2 AND status='pending'",[unitId,businessDate]),
+    queryable.query("SELECT id,shift_name,opened_at FROM cash_sessions WHERE unit_id=$1 AND closed_at IS NULL ORDER BY opened_at DESC LIMIT 1",[unitId]),
+    queryable.query("SELECT count(*)::int entries,COALESCE(sum(ABS(difference_cents)),0)::text absolute_difference_cents FROM cash_sessions WHERE unit_id=$1 AND closed_at IS NOT NULL AND (closed_at AT TIME ZONE 'America/Sao_Paulo')::date=$2",[unitId,businessDate]),
+    queryable.query("SELECT count(*)::int entries FROM expenses e LEFT JOIN categories c ON c.id=e.category_id WHERE e.unit_id=$1 AND e.status IN ('open','paid') AND c.dre_group IS NULL",[unitId])
+  ]);
+  return {business_date:businessDate,sales:sales.rows[0],pending_receipts:receipts.rows[0],open_cash:openCash.rows[0]||null,cash_closures:closedCash.rows[0],unclassified_expenses:unclassified.rows[0].entries};
+}
+
+async function syncManagementPending(queryable,req,unitId,businessDate,snapshot){
+  const [overdue,bankDifferences]=await Promise.all([
+    queryable.query("SELECT count(*)::int entries,COALESCE(sum(e.total_cents-COALESCE(p.paid,0)),0)::text amount_cents FROM expenses e LEFT JOIN (SELECT expense_id,sum(paid_cents) paid FROM expense_installments GROUP BY expense_id) p ON p.expense_id=e.id WHERE e.unit_id=$1 AND e.status='open' AND e.due_date<CURRENT_DATE AND e.total_cents>COALESCE(p.paid,0)",[unitId]),
+    queryable.query("SELECT count(*)::int entries FROM (SELECT DISTINCT ON (account_id) difference_cents FROM bank_reconciliations WHERE unit_id=$1 ORDER BY account_id,created_at DESC) latest WHERE difference_cents<>0",[unitId])
+  ]);
+  const candidates=[];
+  if(!Number(snapshot.sales.entries))candidates.push({key:`missing-sales:${businessDate}`,type:'missing_sales',severity:'high',title:`Faturamento de ${businessDate.split('-').reverse().join('/')} não informado`,detail:'A ausência de lançamento é tratada como dado ausente, não como faturamento igual a zero.',page:'sales',referenceType:'business_date',referenceId:businessDate,due:businessDate});
+  if(snapshot.open_cash)candidates.push({key:`open-cash:${snapshot.open_cash.id}`,type:'open_cash',severity:'high',title:'Caixa aberto aguardando conferência',detail:`O turno ${snapshot.open_cash.shift_name} ainda não foi fechado.`,page:'cash',referenceType:'cash_session',referenceId:snapshot.open_cash.id,due:businessDate});
+  if(Number(overdue.rows[0].entries))candidates.push({key:'overdue-expenses',type:'overdue_expenses',severity:'critical',title:`${overdue.rows[0].entries} conta(s) vencida(s)`,detail:'Há saldo vencido registrado. Confira credores, pagamentos e prazos na origem.',page:'expenses',referenceType:'expense_queue',referenceId:null,due:businessDate});
+  if(Number(snapshot.unclassified_expenses))candidates.push({key:'unclassified-expenses',type:'unclassified_expenses',severity:'high',title:`${snapshot.unclassified_expenses} despesa(s) sem grupo da DRE`,detail:'A DRE permanece parcial enquanto houver lançamentos sem classificação gerencial.',page:'expenses',referenceType:'dre_quality',referenceId:null,due:null});
+  if(Number(bankDifferences.rows[0].entries))candidates.push({key:'bank-differences',type:'bank_differences',severity:'high',title:`${bankDifferences.rows[0].entries} conta(s) com diferença na última conferência`,detail:'Revise o extrato e os lançamentos; a conferência não altera saldos automaticamente.',page:'reconciliation',referenceType:'bank_reconciliation',referenceId:null,due:null});
+  const activeKeys=[];
+  for(const item of candidates){
+    activeKeys.push(item.key);
+    const previous=await queryable.query('SELECT id,status FROM management_pending_items WHERE unit_id=$1 AND dedupe_key=$2',[unitId,item.key]);
+    const row=await queryable.query(`INSERT INTO management_pending_items(id,unit_id,dedupe_key,item_type,severity,title,detail,origin_page,reference_type,reference_id,due_on,status)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'open')
+      ON CONFLICT(unit_id,dedupe_key) DO UPDATE SET item_type=EXCLUDED.item_type,severity=EXCLUDED.severity,title=EXCLUDED.title,detail=EXCLUDED.detail,origin_page=EXCLUDED.origin_page,reference_type=EXCLUDED.reference_type,reference_id=EXCLUDED.reference_id,due_on=EXCLUDED.due_on,status=CASE WHEN management_pending_items.status IN ('resolved','verified') THEN 'open' ELSE management_pending_items.status END,resolved_by=NULL,resolved_at=NULL,verified_by=NULL,verified_at=NULL,updated_at=now()
+      RETURNING id,status`,[id(),unitId,item.key,item.type,item.severity,item.title,item.detail,item.page,item.referenceType,item.referenceId,item.due]);
+    const was=previous.rows[0];
+    if(!was||['resolved','verified'].includes(was.status))await queryable.query('INSERT INTO management_pending_events(id,pending_id,event_type,from_status,to_status,note,created_by) VALUES($1,$2,$3,$4,$5,$6,$7)',[id(),row.rows[0].id,was?'reopened':'opened',was?.status||null,'open',was?'A condição de origem continua ativa.':'Pendência detectada pelo sistema.',req.session.user.id]);
+  }
+  const aggregateTypes=['overdue_expenses','unclassified_expenses','bank_differences'];
+  const currentMissingSalesKey=`missing-sales:${businessDate}`;
+  const cleared=await queryable.query(`WITH previous AS (SELECT id,status old_status FROM management_pending_items WHERE unit_id=$1 AND NOT (dedupe_key=ANY($3::text[])) AND status IN ('open','in_progress','resolved') AND (item_type=ANY($2::text[]) OR item_type='open_cash' OR (item_type='missing_sales' AND dedupe_key=$4)) FOR UPDATE)
+    UPDATE management_pending_items p SET status='verified',resolution_note='Condição de origem deixou de ocorrer.',verified_by=$5,verified_at=now(),updated_at=now() FROM previous WHERE p.id=previous.id RETURNING p.id,previous.old_status`,[unitId,aggregateTypes,activeKeys,currentMissingSalesKey,req.session.user.id]);
+  for(const item of cleared.rows)await queryable.query("INSERT INTO management_pending_events(id,pending_id,event_type,from_status,to_status,note,created_by) VALUES($1,$2,'status_changed',$3,'verified',$4,$5)",[id(),item.id,item.old_status,'Verificada automaticamente porque a condição de origem deixou de ocorrer.',req.session.user.id]);
+}
+
+app.get('/api/management/command',allow('admin','owner','finance','operations','auditor'),async(req,res,next)=>{
+  try{
+    const u=await routeUnit(req,res);if(!u)return;const businessDate=validDate(req.query.date)?req.query.date:localToday();
+    const snapshot=await dailyManagementSnapshot(pool,u.id,businessDate);await inTx(c=>syncManagementPending(c,req,u.id,businessDate,snapshot));
+    const [closure,pending]=await Promise.all([
+      pool.query('SELECT d.*,u.name closed_by_name FROM daily_management_closures d LEFT JOIN users u ON u.id=d.closed_by WHERE d.unit_id=$1 AND d.business_date=$2',[u.id,businessDate]),
+      pool.query("SELECT count(*)::int total,count(*) FILTER(WHERE severity='critical')::int critical,count(*) FILTER(WHERE status='in_progress')::int in_progress FROM management_pending_items WHERE unit_id=$1 AND status IN ('open','in_progress')",[u.id])
+    ]);
+    const saved=closure.rows[0]||null;const derived=saved&&saved.status!=='open'?saved.status:!Number(snapshot.sales.entries)?'open':'awaiting_review';
+    res.json({snapshot,closure:saved,day_status:derived,data_quality:{sales:Number(snapshot.sales.entries)?'confirmed':'missing',dre:Number(snapshot.unclassified_expenses)?'partial':'classified',receipts:Number(snapshot.pending_receipts.entries)?'pending':'settled_or_not_applicable'},pending:pending.rows[0],updated_at:new Date().toISOString()});
+  }catch(e){next(e);}
+});
+
+app.get('/api/management/pending',allow('admin','owner','finance','operations','auditor'),async(req,res,next)=>{
+  try{
+    const u=await routeUnit(req,res);if(!u)return;const businessDate=validDate(req.query.date)?req.query.date:localToday(),snapshot=await dailyManagementSnapshot(pool,u.id,businessDate);await inTx(c=>syncManagementPending(c,req,u.id,businessDate,snapshot));
+    const status=text(req.query.status,30),values=[u.id],where=['p.unit_id=$1'];if(['open','in_progress','resolved','verified'].includes(status)){values.push(status);where.push(`p.status=$${values.length}`);}else where.push("p.status IN ('open','in_progress')");
+    const rows=await pool.query(`SELECT p.*,(SELECT COALESCE(json_agg(json_build_object('event_type',e.event_type,'from_status',e.from_status,'to_status',e.to_status,'note',e.note,'created_at',e.created_at,'created_by_name',u.name) ORDER BY e.created_at,e.id),'[]'::json) FROM management_pending_events e LEFT JOIN users u ON u.id=e.created_by WHERE e.pending_id=p.id) events FROM management_pending_items p WHERE ${where.join(' AND ')} ORDER BY CASE p.severity WHEN 'critical' THEN 1 WHEN 'high' THEN 2 ELSE 3 END,p.due_on NULLS LAST,p.opened_at`,values);res.json(rows.rows);
+  }catch(e){next(e);}
+});
+
+app.post('/api/management/pending/:id',allow('admin','owner','finance','operations'),async(req,res,next)=>{
+  try{
+    const u=await routeUnit(req,res);if(!u)return;const d=req.body,status=d.status===undefined?null:text(d.status,30),allowed=['open','in_progress','resolved','verified'];if(status&&!allowed.includes(status))return fail(res,400,'Status de pendência inválido.');const note=text(d.note,1000),assigned=d.assigned_to===undefined?undefined:text(d.assigned_to,160)||null;if(status==='resolved'&&!note)return fail(res,400,'Informe como a pendência foi resolvida.');
+    const result=await inTx(async c=>{const old=(await c.query('SELECT * FROM management_pending_items WHERE id=$1 AND unit_id=$2 FOR UPDATE',[req.params.id,u.id])).rows[0];if(!old)return null;const nextStatus=status||old.status,nextAssigned=assigned===undefined?old.assigned_to:assigned;const row=(await c.query(`UPDATE management_pending_items SET status=$1,assigned_to=$2,resolution_note=CASE WHEN $1='resolved' THEN $3 ELSE resolution_note END,resolved_by=CASE WHEN $1='resolved' THEN $4 ELSE resolved_by END,resolved_at=CASE WHEN $1='resolved' THEN now() ELSE resolved_at END,verified_by=CASE WHEN $1='verified' THEN $4 ELSE verified_by END,verified_at=CASE WHEN $1='verified' THEN now() ELSE verified_at END,updated_at=now() WHERE id=$5 RETURNING *`,[nextStatus,nextAssigned,note||null,req.session.user.id,old.id])).rows[0];const eventType=note&&!status&&assigned===undefined?'commented':assigned!==undefined&&assigned!==old.assigned_to&&!status?'assigned':'status_changed';await c.query('INSERT INTO management_pending_events(id,pending_id,event_type,from_status,to_status,note,created_by) VALUES($1,$2,$3,$4,$5,$6,$7)',[id(),old.id,eventType,old.status,row.status,note||null,req.session.user.id]);await audit(c,req,u.id,eventType,'management_pending',old.id,old,row,note||null);return row;});if(!result)return fail(res,404,'Pendência não encontrada.');res.json(result);
+  }catch(e){next(e);}
+});
+
+app.post('/api/management/days/:date/close',allow('admin','owner','finance'),async(req,res,next)=>{
+  try{
+    const u=await routeUnit(req,res);if(!u)return;const businessDate=validDate(req.params.date)?req.params.date:null,status=['closed','closed_with_reservation'].includes(req.body.status)?req.body.status:null,reason=text(req.body.reason,1000);if(!businessDate||businessDate>localToday()||!status)return fail(res,400,'Revise a data e o estado do fechamento.');if(status==='closed_with_reservation'&&reason.length<8)return fail(res,400,'Explique a ressalva com pelo menos 8 caracteres.');
+    const result=await inTx(async c=>{const snapshot=await dailyManagementSnapshot(c,u.id,businessDate);if(status==='closed'&&(!Number(snapshot.sales.entries)||snapshot.open_cash))return {error:'Para fechar sem ressalva, registre o faturamento e feche o caixa aberto.'};const old=(await c.query('SELECT * FROM daily_management_closures WHERE unit_id=$1 AND business_date=$2 FOR UPDATE',[u.id,businessDate])).rows[0]||null;const row=(await c.query(`INSERT INTO daily_management_closures(id,unit_id,business_date,status,reason,snapshot,closed_by,closed_at) VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,now()) ON CONFLICT(unit_id,business_date) DO UPDATE SET status=EXCLUDED.status,reason=EXCLUDED.reason,snapshot=EXCLUDED.snapshot,closed_by=EXCLUDED.closed_by,closed_at=now(),updated_at=now() RETURNING *`,[id(),u.id,businessDate,status,reason||null,JSON.stringify(snapshot),req.session.user.id])).rows[0];await audit(c,req,u.id,'close','daily_management_closure',row.id,old,row,reason||null);return row;});if(result.error)return fail(res,409,result.error);res.json(result);
+  }catch(e){next(e);}
+});
+
+app.post('/api/management/days/:date/reopen',allow('admin','owner'),async(req,res,next)=>{
+  try{
+    const u=await routeUnit(req,res);if(!u)return;const businessDate=validDate(req.params.date)?req.params.date:null,reason=text(req.body.reason,1000);if(!businessDate||reason.length<8)return fail(res,400,'Informe a data e uma justificativa com pelo menos 8 caracteres.');const result=await inTx(async c=>{const old=(await c.query("SELECT * FROM daily_management_closures WHERE unit_id=$1 AND business_date=$2 AND status IN ('closed','closed_with_reservation') FOR UPDATE",[u.id,businessDate])).rows[0];if(!old)return null;const row=(await c.query("UPDATE daily_management_closures SET status='open',reopened_by=$1,reopened_at=now(),reopen_reason=$2,updated_at=now() WHERE id=$3 RETURNING *",[req.session.user.id,reason,old.id])).rows[0];await audit(c,req,u.id,'reopen','daily_management_closure',row.id,old,row,reason);return row;});if(!result)return fail(res,404,'Fechamento diário não encontrado ou já aberto.');res.json(result);
+  }catch(e){next(e);}
+});
+
  app.get('/api/sales', async (req, res, next) => {
    try { const u=await routeUnit(req,res);if(!u)return;const from=validDate(req.query.from)?req.query.from:'2000-01-01',to=validDate(req.query.to)?req.query.to:'2999-12-31';const r=await pool.query(`SELECT s.*,(SELECT COALESCE(json_agg(json_build_object('id',a.id,'name',a.original_name)),'[]'::json) FROM attachments a WHERE a.entity_type='sale' AND a.entity_id=s.id) attachments,(SELECT COALESCE(json_agg(json_build_object('id',sr.id,'payment_method',sr.payment_method,'amount_cents',sr.amount_cents::text,'settlement_on',sr.settlement_on::text,'status',sr.status) ORDER BY sr.settlement_on,sr.created_at),'[]'::json) FROM sale_receipts sr WHERE sr.sale_id=s.id) receipts FROM sales s WHERE s.unit_id=$1 AND s.sale_date BETWEEN $2 AND $3 ORDER BY s.sale_date DESC,s.created_at DESC LIMIT 500`,[u.id,from,to]);res.json(r.rows); }
   catch(e){next(e);}
@@ -699,7 +780,8 @@ app.get('/api/dre',allow('admin','owner','finance','auditor'),async(req,res,next
     const gross=BigInt(income.rows[0].amount),deductions=BigInt(groups.deduction?.amount||0),net=gross-deductions,sums={};
     for(const group of ['cmv','personnel','operating','administrative','occupancy','financial','other','unclassified'])sums[group]=groups[group]?.amount||'0';
     const expenses=Object.values(sums).reduce((total,value)=>total+BigInt(value),0n);
-    res.json({unit:u,period:{month:start.slice(0,7)===end.slice(0,7)?start.slice(0,7):null,start,end,state:'aberto'},gross_revenue_cents:gross.toString(),deductions_cents:deductions.toString(),net_revenue_cents:net.toString(),expense_groups:sums,operating_result_cents:(net-expenses).toString(),classified:!groups.unclassified,cmv_rule:'CMV depende de regra configurada e validada; compras não são tratadas automaticamente como consumo.',methodology:'Receita por data de faturamento; despesas por competência (accrual_date). Pagamentos de caixa não são somados novamente na DRE.'});
+    const missing=[];if(!Number(income.rows[0].entries))missing.push('faturamento confirmado no período');if(groups.unclassified)missing.push(`${groups.unclassified.entries} despesa(s) sem grupo da DRE`);missing.push('regra de CMV validada pela gestão/contabilidade');
+    res.json({unit:u,period:{month:start.slice(0,7)===end.slice(0,7)?start.slice(0,7):null,start,end,state:'aberto'},gross_revenue_cents:gross.toString(),deductions_cents:deductions.toString(),net_revenue_cents:net.toString(),expense_groups:sums,operating_result_cents:(net-expenses).toString(),classified:!groups.unclassified,validation:{state:'not_validated',label:'Resultado parcial · não validado',missing},cmv_rule:'CMV depende de regra configurada e validada; compras não são tratadas automaticamente como consumo.',methodology:'Receita por data de faturamento; despesas por competência (accrual_date). Pagamentos de caixa não são somados novamente na DRE.'});
   }catch(e){next(e);}
 });
 app.get('/api/reports/sales.csv', async(req,res,next)=>{try{const u=await routeUnit(req,res);if(!u)return;const from=validDate(req.query.from)?req.query.from:'2000-01-01',to=validDate(req.query.to)?req.query.to:'2999-12-31';const r=await pool.query('SELECT sale_date,channel,amount_cents,target_cents,status,notes FROM sales WHERE unit_id=$1 AND sale_date BETWEEN $2 AND $3 ORDER BY sale_date',[u.id,from,to]);const csv=['data;canal;valor_centavos;meta_centavos;status;observacoes',...r.rows.map(x=>[x.sale_date,x.channel,x.amount_cents,x.target_cents||'',x.status,x.notes||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';'))].join('\r\n');res.setHeader('Content-Type','text/csv; charset=utf-8');res.setHeader('Content-Disposition','attachment; filename="vendas.csv"');res.send('\ufeff'+csv);}catch(e){next(e);}});

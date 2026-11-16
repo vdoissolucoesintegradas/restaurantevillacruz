@@ -7,7 +7,7 @@ const ALL = [A, O, F, P, U];
 // [módulo, rótulo na tela, [[chave, rótulo, perfis com a chave por padrão], ...]]
 const MODULES = [
   ['reconciliation','Conferência', [['reconciliation.view','Consultar conferências e pendências',[A,O,F,U]],['reconciliation.manage','Registrar conferência bancária',[A,O,F]]]],
-  ['overview', 'Visão geral', [['overview.view', 'Ver painel e checklist', ALL], ['tasks.manage', 'Adicionar e concluir tarefas', [A, O, F, P]]]],
+  ['overview', 'Visão geral e pendências', [['overview.view', 'Ver painel, checklist e pendências', ALL], ['tasks.manage', 'Gerir tarefas e pendências', [A, O, F, P]], ['daily_closure.manage', 'Fechar o dia gerencial', [A, O, F]], ['daily_closure.reopen', 'Reabrir fechamento diário', [A, O]]]],
   ['sales', 'Faturamento e CMV', [['sales.view', 'Ver', ALL], ['sales.create', 'Lançar', [A, O, F, P]], ['sales.edit', 'Editar', [A, O, F]], ['sales.delete', 'Excluir e restaurar', [A, O, F]]]],
   ['expenses', 'Despesas e notas', [['expenses.view', 'Ver', [A, O, F, U]], ['expenses.create', 'Registrar e gerar recorrências', [A, O, F]], ['expenses.edit', 'Editar', [A, O, F]], ['expenses.delete', 'Excluir e restaurar', [A, O, F]], ['expenses.pay', 'Registrar, editar e excluir pagamentos', [A, O, F]]]],
   ['cash', 'Caixa da loja', [['cash.view', 'Ver', ALL], ['cash.analyze', 'Ver diferenças e previsão', [A, O, F, U]], ['cash.move', 'Lançar movimentos', [A, O, F, P]], ['cash.shift', 'Abrir e fechar caixa', [A, O, F]], ['cash.edit', 'Editar movimentos', [A, O, F]], ['cash.delete', 'Excluir e restaurar movimentos', [A, O, F]]]],
@@ -33,6 +33,9 @@ const RULES = [
   ['GET','/api/products/:id/history','inventory.view'], ['GET','/api/cash/movements/:id/history','cash.view'],
   ['GET', '/api/dashboard', 'overview.view'], ['GET', '/api/operations/tasks', 'overview.view'],
   ['POST', '/api/operations/tasks', 'tasks.manage'], ['POST', '/api/operations/tasks/:id', 'tasks.manage'],
+  ['GET', '/api/management/command', 'overview.view'], ['GET', '/api/management/pending', 'overview.view'],
+  ['POST', '/api/management/pending/:id', 'tasks.manage'], ['POST', '/api/management/days/:date/close', 'daily_closure.manage'],
+  ['POST', '/api/management/days/:date/reopen', 'daily_closure.reopen'],
   ['GET', '/api/sales', 'sales.view'], ['GET', '/api/sales/comparison', 'sales.view'], ['GET', '/api/reports/sales.csv', 'sales.view'],
   ['POST', '/api/sales', 'sales.create'], ['PATCH', '/api/sales/:id', 'sales.edit'], ['DELETE', '/api/sales/:id', 'sales.delete'], ['POST', '/api/sales/:id/restore', 'sales.delete'],
   ['POST', '/api/categories', 'inventory.create'], ['POST', '/api/catalog/options', 'inventory.create'],

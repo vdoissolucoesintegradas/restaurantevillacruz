@@ -191,7 +191,7 @@ td.money,.money{font-variant-numeric:tabular-nums;font-weight:700}
 
 /* Responsivo: margens e quebras */
 @media(max-width:1100px){.flow-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.flow-charts{grid-template-columns:minmax(0,1fr)}.flow-filter{grid-template-columns:repeat(2,minmax(0,1fr))}.flow-payables{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:767px){.pbi-split{grid-template-columns:minmax(0,1fr);gap:12px}.kpi-card{min-height:116px;padding:14px 15px}.kpi-ring{width:44px;height:44px;right:14px;bottom:12px}.page-heading h1::after{margin-top:7px}}
+@media(max-width:767px){.pbi-split{grid-template-columns:minmax(0,1fr);gap:12px}.kpi-card{min-height:116px;padding:14px 15px}.kpi-ring{width:44px;height:44px;right:14px;bottom:12px}.page-heading>div:first-child{width:100%;flex-basis:auto}.page-heading h1::after{margin-top:7px}}
 @media(max-width:480px){.flow-kpis{grid-template-columns:minmax(0,1fr)}.flow-filter{grid-template-columns:minmax(0,1fr)}.flow-payables{grid-template-columns:minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 

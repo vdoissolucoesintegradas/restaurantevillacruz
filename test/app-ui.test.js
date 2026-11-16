@@ -37,7 +37,7 @@ const flowFixture = {
   ],
 };
 
-async function launchApp({ role = 'owner', now = null, sales = [], cash = null, reportRows = [] } = {}) {
+async function launchApp({ role = 'owner', now = null, sales = [], cash = null, reportRows = [], pending = null } = {}) {
   class FixedDate extends Date {
     constructor(...args) { if (args.length) super(...args); else super(now); }
     static now() { return new Date(now).getTime(); }
@@ -71,6 +71,8 @@ async function launchApp({ role = 'owner', now = null, sales = [], cash = null, 
       stock: { expired: 1, expires_soon: 0, low_stock: 0 }, activity: [],
     };
     else if (String(url).startsWith('/api/operations/tasks')) data = [];
+    else if (String(url).startsWith('/api/management/command')) data = { snapshot: { business_date: '2026-10-15', sales: { entries: 0, amount_cents: '0', channels: 0 }, pending_receipts: { entries: 0, amount_cents: '0' }, open_cash: null, cash_closures: { entries: 0, absolute_difference_cents: '0' }, unclassified_expenses: 1 }, closure: null, day_status: 'open', data_quality: { sales: 'missing', dre: 'partial', receipts: 'settled_or_not_applicable' }, pending: { total: 2, critical: 1, in_progress: 0 }, updated_at: '2026-10-15T15:00:00Z' };
+    else if (String(url).startsWith('/api/management/pending')) data = pending || [{ id: 'p1', item_type: 'missing_sales', severity: 'high', title: 'Faturamento não informado', detail: 'Dado ausente, não é zero.', origin_page: 'sales', assigned_to: null, due_on: '2026-10-15', status: 'open', events: [{ event_type: 'opened', from_status: null, to_status: 'open', note: 'Detectada pelo sistema.', created_at: '2026-10-15T12:00:00Z', created_by_name: 'Ana' }] }];
     else if (String(url).startsWith('/api/cash/discrepancies')) data = { rows: [], summary: { closures_with_difference: 0, positive_count: 0, positive_cents: '0', negative_count: 0, negative_cents: '0', absolute_cents: '0', net_cents: '0', opening_breaks: 0, opening_net_cents: '0' }, limits: null, alert: false, limited: false };
     else if (String(url).startsWith('/api/cash')) data = cash || { movements: [], open_session: null, balance_cents: '0' };
     else if (String(url).startsWith('/api/reports/run')) data = { title: 'Movimentações de estoque', columns: ['data', 'produto'], rows: reportRows, filters: {}, limited: false };
@@ -105,9 +107,21 @@ test('painel mostra alertas acionáveis e direciona para os módulos', async () 
   assert.match(html, /data-page-link="inventory"/);
   assert.match(html, /data-page-link="cash"/);
   assert.match(html, /Faturamento de hoje não lançado/);
+  assert.match(html, /Faturamento ausente/);
+  assert.match(html, /Abrir centro de comando/);
   assert.match(html, /data-do="stock-receive-quick"/);
   assert.match(html, /data-do="cash-movement-quick"/);
   assert.doesNotMatch(html, /data-page-link="inventory">＋ Receber estoque/);
+});
+
+test('central de pendências mostra qualidade, responsável, origem e fechamento diário', async () => {
+  const html = await openPage(await launchApp(), 'pending', 'Central de pendências');
+  assert.match(html, /Dado ausente, não é zero/);
+  assert.match(html, /Responsável/);
+  assert.match(html, /Abrir origem/);
+  assert.match(html, /Fechar com ressalva/);
+  assert.match(html, /Dado ausente/);
+  assert.doesNotMatch(html, /<strong>R\$\s?0,00<\/strong><small>Não é tratado como/);
 });
 
 test('caixa: a abertura traz o saldo acumulado do sistema e o campo para contar a gaveta', async () => {

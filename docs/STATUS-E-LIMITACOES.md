@@ -9,6 +9,9 @@ O repositório contém uma aplicação integrada com cadastro e consulta dos mó
 - O visual usa uma camada extra (`public/theme-tech.css`) sobre `styles.css`: indicadores principais em cartões escuros com brilho, gráficos SVG nos dashboards com paleta própria (azul, laranja, violeta, verde-água e vermelho) e a mesma identidade âmbar da marca nos botões e na navegação. Para voltar ao visual anterior, remova o `<link>` dessa folha em `public/index.html`.
 - A visão geral abre com os indicadores e gráficos antes dos alertas; quem já personalizou a ordem dos cartões mantém a própria ordem.
 - A visão geral apresenta alertas acionáveis para faturamento do dia, estado do caixa (conforme visibilidade do perfil), contas a vencer/vencidas e condições de estoque. Os destinos são os módulos existentes; o painel não altera registros automaticamente.
+- A visão geral agora também expõe o estado gerencial do dia, a qualidade dos dados e a quantidade de pendências ativas. Ausência de faturamento aparece como dado ausente, nunca como receita comprovadamente igual a zero.
+- A Central de pendências consolida exceções detectáveis de faturamento ausente, caixa aberto, contas vencidas, despesas sem grupo da DRE e diferenças na última conferência bancária. A fila guarda responsável, prazo, estado, comentários e histórico; chaves de deduplicação impedem a multiplicação do mesmo alerta.
+- O fechamento diário gerencial registra fotografia dos dados, responsável e eventual ressalva. Fechamento sem ressalva exige faturamento confirmado e nenhum caixa aberto; proprietário ou administrador pode reabrir com justificativa auditável. Esse controle não substitui fechamento fiscal ou contábil.
 - As telas usam tokens visuais compartilhados, navegação escura e superfícies claras. Isso é uma atualização de apresentação e não altera regras ou dados.
 - O cadastro de fornecedores permite configurar por unidade quais campos complementares aparecem; nome e CNPJ continuam fixos. CNAE/atividade principal e capital social começam ocultos. O cadastro também guarda e lista um contato de referência (nome, cargo, telefone e e-mail).
 - A lista de despesas mostra o saldo pendente (total menos pagamentos registrados), resume quantidade vencida/próxima e não oferece ação de pagamento para despesas quitadas ou canceladas. O detalhamento por parcela ainda não está disponível na lista.
@@ -18,7 +21,7 @@ O repositório contém uma aplicação integrada com cadastro e consulta dos mó
 ## O que precisa de validação antes dos dados oficiais
 
 - **CMV:** não consolidar automaticamente compras, consumo, cortesias e baixa de estoque. A regra empresarial/contábil ainda precisa ser confirmada.
-- **DRE:** faturamento entra por data do lançamento confirmado; despesas entram por `accrual_date`; pagamentos ficam no controle de caixa/pagamentos sem serem somados novamente. A estrutura e os denominadores precisam ser validados com o contador.
+- **DRE:** faturamento entra por data do lançamento confirmado; despesas entram por `accrual_date`; pagamentos ficam no controle de caixa/pagamentos sem serem somados novamente. A tela rotula o resultado como parcial/não validado e lista faturamento ausente, despesas sem grupo e a regra de CMV ainda não validada. A estrutura e os denominadores precisam ser validados com o contador.
 - **Taxas e impostos:** taxas encontradas nas planilhas não são incorporadas como premissas oficiais nem aplicadas automaticamente.
 - **Unidade/empresa:** os arquivos de referência mencionam Villa Cruz e Bocattino. A base inicial cria só Villa Cruz; não consolide negócios distintos.
 - **Dados ausentes:** “X”, célula vazia, texto numérico inválido ou fórmula quebrada requerem revisão; não equivalem a zero.
