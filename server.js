@@ -211,7 +211,7 @@ app.patch('/api/auth/appearance', requireAuth, async (req, res, next) => {
     const appearance=req.body?.appearance;
     if(!appearance||typeof appearance!=='object'||Array.isArray(appearance))return fail(res,400,'Preferência visual inválida.');
     const mode=appearance.mode==='dark'?'dark':'light',preset=text(appearance.preset,24),accent=text(appearance.accent,7),nav=text(appearance.nav,7);
-    if(!/^#[0-9a-f]{6}$/i.test(accent)||!/^#[0-9a-f]{6}$/i.test(nav)||!['villa','oceano','vinho','floresta','grafite','lavanda','custom'].includes(preset))return fail(res,400,'Defina um tema e cores válidas.');
+    if(!/^#[0-9a-f]{6}$/i.test(accent)||!/^#[0-9a-f]{6}$/i.test(nav)||!['villa','confianca','equilibrio','energia','criatividade','azul-profundo','oceano','vinho','floresta','grafite','lavanda','custom'].includes(preset))return fail(res,400,'Defina um tema e cores válidas.');
     const value={mode,preset,accent,nav};
     await pool.query('UPDATE users SET appearance=$1::jsonb,updated_at=now() WHERE id=$2',[JSON.stringify(value),req.session.user.id]);
     res.json({appearance:value});
