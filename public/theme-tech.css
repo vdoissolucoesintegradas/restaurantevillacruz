@@ -1091,3 +1091,30 @@ html[data-theme] .cash-summary-row .financial-summary-kpis .mini-kpi strong{font
 .launch-responsible-field { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
 .launch-responsible-field select { width: 100%; min-width: 0; }
 @media (max-width: 560px) { .launch-responsible-field { grid-template-columns: minmax(0, 1fr); } }
+
+/* Notes filters and totals are independent rows so filters cannot stretch the cards. */
+#page-content .notes-summary-row { display: block; }
+.notes-filter-bar { margin-bottom: 10px; padding: 8px 12px; }
+.notes-filter-bar > summary { font-weight: 700; cursor: pointer; }
+.notes-filter-bar .expense-list-filters {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.5fr) repeat(6, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+.notes-filter-bar .expense-list-filters > * { grid-column: auto; min-width: 0; }
+.notes-filter-bar :is(input, select) { width: 100%; min-width: 0; }
+.notes-filter-bar .expense-filter-actions .button { min-height: 34px; }
+.notes-summary-row .financial-summary-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+html[data-theme] .notes-summary-row .financial-summary-kpis .mini-kpi { padding: 10px 12px; gap: 4px; min-height: 60px; }
+@media (max-width: 1200px) {
+  .notes-filter-bar .expense-list-filters { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .notes-filter-bar .expense-list-filters, .notes-summary-row .financial-summary-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .notes-filter-bar .expense-list-filters > :is(.expense-filter-search,.expense-filter-actions) { grid-column: 1 / -1; }
+}
