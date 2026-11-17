@@ -1042,3 +1042,48 @@ html[data-theme] #logout-button-top:hover,html[data-theme] #mobile-logout:hover,
 .financial-period-filter #cash-period-filter input{min-width:0;width:100%}
 
 .monthly-breakages{border-top:1px solid var(--theme-border);padding-top:14px;margin-top:14px;min-width:0}.monthly-breakages-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.monthly-breakages-heading h4{margin:0;font-size:14px}.monthly-breakages-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}.monthly-breakages-values>div{min-width:0}.monthly-breakages-values span{display:block;font-size:12px;line-height:1.4;color:var(--theme-muted)}.monthly-breakages-values strong{display:block;margin-top:6px;font-size:20px;line-height:1.3;color:var(--theme-text);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.monthly-breakages .hint{margin:12px 0 0;font-size:11px}@media(max-width:560px){.monthly-breakages-values{grid-template-columns:1fr 1fr}.monthly-breakages-values>div:last-child{grid-column:1/-1}}
+
+/* Compact cash summary retains readable amounts and aligned period fields. */
+.cash-summary-row{gap:10px;margin-bottom:12px}
+.cash-summary-row .financial-summary-kpis{gap:8px}
+html[data-theme] .cash-summary-row .financial-summary-kpis .mini-kpi{padding:12px 14px;gap:5px;min-height:72px;font-size:12px}
+html[data-theme] .cash-summary-row .financial-summary-kpis .mini-kpi strong{font-size:24px;line-height:1.15}
+.cash-summary-row .financial-period-filter{padding:12px}
+.cash-summary-row .financial-period-filter h2{font-size:14px;margin:0 0 8px}
+.cash-summary-row .financial-period-filter #cash-period-filter{gap:8px}
+.cash-summary-row .financial-period-filter #cash-period-filter label{gap:4px;font-size:12px}
+.cash-summary-row .financial-period-filter #cash-period-filter input{min-height:34px;height:34px;padding:5px 8px}
+.cash-summary-row .financial-period-filter #cash-period-filter .help-text{margin:0;font-size:11px;line-height:1.4}
+.cash-summary-row .financial-period-filter #cash-period-filter .form-actions{margin:0;padding:0}
+.cash-summary-row .financial-period-filter #cash-period-filter .button{min-height:34px;padding:6px 12px}
+.monthly-breakages-heading{justify-content:flex-end}
+.buy-sell-month-card .monthly-breakages{border-top:0;margin-top:10px;padding-top:0}
+@media(max-width:560px){html[data-theme] .cash-summary-row .financial-summary-kpis .mini-kpi{padding:12px;min-height:76px}html[data-theme] .cash-summary-row .financial-summary-kpis .mini-kpi strong{font-size:22px}.cash-summary-row .financial-period-filter #cash-period-filter input{min-height:40px;height:40px}.cash-summary-row .financial-period-filter #cash-period-filter .button{min-height:40px}}
+
+/* Shared spacing for the application panels. */
+#page-content {
+  --space-3: 10px;
+  --space-4: 12px;
+  --space-5: 18px;
+}
+#page-content :is(.dashboard-layout,.kpi-grid,.financial-summary-row,.settings-page-grid,.flow-charts) {
+  gap: 10px;
+}
+#page-content :is(.section-card,.form-card,.financial-period-filter,.buy-sell-period-card) {
+  padding: clamp(12px, 1.3vw, 18px);
+}
+#page-content .kpi-card {
+  min-height: 100px;
+  padding: 12px 14px;
+  gap: 6px;
+}
+#page-content :is(.section-head,.table-toolbar) {
+  gap: 10px;
+  padding-inline: clamp(12px, 1.3vw, 18px);
+}
+#page-content .section-head { align-items: flex-start; }
+#page-content .form-grid { align-items: start; }
+#page-content .page-heading { margin-bottom: 12px; }
+@media (max-width: 767px) {
+  #page-content .section-head { flex-wrap: wrap; }
+}
