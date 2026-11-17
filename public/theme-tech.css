@@ -1118,3 +1118,62 @@ html[data-theme] .notes-summary-row .financial-summary-kpis .mini-kpi { padding:
   .notes-filter-bar .expense-list-filters, .notes-summary-row .financial-summary-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .notes-filter-bar .expense-list-filters > :is(.expense-filter-search,.expense-filter-actions) { grid-column: 1 / -1; }
 }
+
+/* Shared type scale for equivalent elements across modules and dialogs. */
+:root {
+  --type-page-title: clamp(23px, 2vw, 29px);
+  --type-section-title: 16px;
+  --type-card-title: 14px;
+  --type-body: 14px;
+  --type-label: 13px;
+  --type-support: 12px;
+  --type-metric: clamp(20px, 1.8vw, 26px);
+}
+
+html[data-theme] :is(#page-content, .modal) .page-heading h1 {
+  font-size: var(--type-page-title);
+}
+
+html[data-theme] :is(#page-content, .modal) :is(.section-head, .table-toolbar, .form-card, .financial-period-filter, .cash-card-heading, .modal-header) h2 {
+  font-size: var(--type-section-title);
+}
+
+html[data-theme] :is(#page-content, .modal) :is(.form-section-title, .buy-sell-period-heading h3, .monthly-breakages-heading h4) {
+  font-size: var(--type-card-title);
+}
+
+html[data-theme] :is(#page-content, .modal) :is(label, .button, .kpi-top, .mini-kpi, .monthly-breakages-values span, .cash-session-metric span, .cash-close-reference span, .sales-period-kpis article > span, td) {
+  font-size: var(--type-label);
+}
+
+html[data-theme] :is(#page-content, .modal) :is(.page-heading p, .section-head p, .table-toolbar p, .help-text, .hint, .kpi-foot, .badge, th),
+html[data-theme] :is(#page-content, .modal) td[data-label]::before {
+  font-size: var(--type-support);
+}
+
+html[data-theme] :is(#page-content, .modal) :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]), select, textarea) {
+  font-size: var(--type-body);
+}
+
+html[data-theme] :is(#page-content, .modal) .cnpj-field input {
+  font-size: var(--type-body) !important;
+}
+
+html[data-theme] :is(#page-content, .modal) :is(.kpi-value, .mini-kpi strong, .monthly-breakages-values strong, .cash-session-metric strong, .cash-close-reference strong, .sales-period-kpis article > strong, .buy-sell-ratio-value) {
+  font-size: var(--type-metric);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+html[data-theme] #page-content .cash-movement-pagination .button {
+  font-size: var(--type-section-title);
+}
+
+html[data-theme] .page-wrap #page-content > .mini-kpis .mini-kpi {
+  font-size: var(--type-label);
+  white-space: normal;
+}
+
+html[data-theme] .page-wrap #page-content > .mini-kpis .mini-kpi strong {
+  white-space: normal;
+}
