@@ -408,8 +408,12 @@ html[data-theme="dark"] .nav-item.active .nav-icon{color:#17140f!important}
 
 .overview-date-filter{display:flex;align-items:center;gap:12px;max-width:300px;padding:4px 0 12px;color:var(--muted);font-size:12px;font-weight:700}
 .overview-date-filter input{min-height:40px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit}
+.overview-toolbar .overview-date-filter{flex:none;max-width:none;gap:7px;margin:0;padding:0;color:var(--theme-muted);font-size:10px;white-space:nowrap}
+.overview-toolbar .overview-date-filter input{width:142px;min-height:31px;padding:5px 7px;border-color:var(--theme-border);border-radius:8px;background:var(--theme-panel);color:var(--theme-text);font-size:10px}
+.overview-toolbar .overview-quick-actions{flex:0 1 auto}
 .advanced-nav{display:none!important}
-@media(max-width:700px){.overview-date-filter{width:100%;max-width:none;justify-content:space-between}.overview-date-filter input{flex:1;min-width:0}.dashboard-layout>.dashboard-block.dashboard-wide{min-width:0}}
+@media(max-width:1100px){.overview-toolbar .overview-date-filter{margin-right:auto}}
+@media(max-width:767px){.overview-toolbar .overview-date-filter{width:100%;max-width:none;justify-content:space-between}.overview-toolbar .overview-date-filter input{width:auto;flex:1;min-width:0}.overview-date-filter{width:100%;max-width:none;justify-content:space-between}.overview-date-filter input{flex:1;min-width:0}.dashboard-layout>.dashboard-block.dashboard-wide{min-width:0}}
 
 html[data-theme] .app-topbar{background:var(--user-nav,#14245d)!important;color:#eef1ff!important;border-bottom-color:rgba(255,255,255,.14)!important}
 html[data-theme] .app-topbar .topbar-context strong,html[data-theme] .app-topbar .topbar-context small,html[data-theme] .app-topbar .topbar-date,html[data-theme] .app-topbar .topbar-profile,html[data-theme] .app-topbar .topbar-logout{color:#eef1ff!important}
@@ -821,3 +825,57 @@ html[data-theme="dark"] .sidebar,html[data-theme="dark"] .app-topbar,html[data-t
 html[data-theme="dark"] .card,html[data-theme="dark"] .kpi-card,html[data-theme="dark"] .section-card,html[data-theme="dark"] .form-card,html[data-theme="dark"] .table-card,html[data-theme="dark"] .period-filter-card,html[data-theme="dark"] .cash-session-summary,html[data-theme="dark"] .cash-balance-card,html[data-theme="dark"] .cash-closed-details,html[data-theme="dark"] .flow-coverage,html[data-theme="dark"] .alert-row,html[data-theme="dark"] .mini-kpi,html[data-theme="dark"] .dashboard-block[data-dashboard-block="today-result"],html[data-theme="dark"] .dashboard-chart-card,html[data-theme="dark"] .dashboard-forecast-card,html[data-theme="dark"] .settings-card,html[data-theme="dark"] .dashboard-dre-metrics article,html[data-theme="dark"] .dashboard-forecast-metric{background:var(--theme-panel)!important;background-image:none!important;color:var(--theme-text)!important;border-color:var(--theme-border)!important;box-shadow:none!important}
 html[data-theme="dark"] th,html[data-theme="dark"] .table thead,html[data-theme="dark"] .dashboard-result-highlight,html[data-theme="dark"] .dashboard-chart-legend{background:var(--theme-soft)!important;color:var(--theme-text)!important;border-color:var(--theme-border)!important}
 html[data-theme="dark"] tr:nth-child(even),html[data-theme="dark"] .table tbody tr:nth-child(even){background:var(--theme-soft)!important}
+
+/* Keep readable content colors independent of the chosen theme accent. */
+html[data-theme="light"]{--theme-page:#f3f5f7!important;--theme-panel:#ffffff!important;--theme-soft:#edf1f5!important;--theme-control:#ffffff!important;--theme-border:#d6dde5!important;--theme-text:#1c2530!important;--theme-muted:#586574!important;--paper:#f3f5f7!important;--card:#ffffff!important;--soft:#edf1f5!important;--line:#d6dde5!important;--ink:#1c2530!important;--muted:#586574!important}
+html[data-theme="dark"]{--theme-page:#20252d!important;--theme-panel:#292f39!important;--theme-soft:#363e49!important;--theme-control:#242b34!important;--theme-border:#46505d!important;--theme-text:#f3f5f7!important;--theme-muted:#c0c7d0!important;--paper:#20252d!important;--card:#292f39!important;--soft:#363e49!important;--line:#46505d!important;--ink:#f3f5f7!important;--muted:#c0c7d0!important}
+html[data-theme] body,html[data-theme] .app-shell,html[data-theme] .main-content,html[data-theme] .page-wrap{color:var(--theme-text)!important}
+html[data-theme] .card,html[data-theme] .kpi-card,html[data-theme] .section-card,html[data-theme] .form-card,html[data-theme] .table-card,html[data-theme] .dashboard-block[data-dashboard-block],html[data-theme] .settings-card,html[data-theme] .dashboard-forecast-card,html[data-theme] .dashboard-chart-card{color:var(--theme-text)!important}
+html[data-theme] .dashboard-forecast-metric>strong,html[data-theme] .dashboard-forecast-metric.net>strong,html[data-theme] .dashboard-dre-metrics article>strong,html[data-theme] .dashboard-forecast-metrics article>strong{color:var(--theme-text)!important}
+html[data-theme] .dashboard-forecast-label,html[data-theme] .dashboard-forecast-metric>small,html[data-theme] .dashboard-forecast-metrics article>small,html[data-theme] .dashboard-dre-metrics article>small,html[data-theme] .dashboard-chart-foot,html[data-theme] .forecast-method{color:var(--theme-muted)!important}
+html[data-theme] .forecast-insight{background:var(--theme-soft)!important;border-color:var(--theme-border)!important}
+html[data-theme] .forecast-insight p,html[data-theme] .forecast-insight p strong{color:var(--theme-text)!important}
+html[data-theme] .forecast-insight-icon{background:var(--theme-panel)!important;color:var(--theme-text)!important;border:1px solid var(--theme-border)!important}
+html[data-theme] .forecast-compare-row{background:var(--theme-soft)!important}
+html[data-theme] input,html[data-theme] select,html[data-theme] textarea{background-color:var(--theme-control)!important;color:var(--theme-text)!important;border-color:var(--theme-border)!important}
+html[data-theme] input::placeholder,html[data-theme] textarea::placeholder{color:var(--theme-muted)!important;opacity:1}
+html[data-theme] th,html[data-theme] td{color:var(--theme-text)}
+html[data-theme] .nav-item.active{color:var(--theme-accent-text)!important}
+html[data-theme] .nav-item.active .nav-icon{color:var(--theme-accent-text)!important}
+html[data-theme] .button,html[data-theme] .button.primary,html[data-theme] .button.primary:hover{background:var(--user-accent)!important;color:var(--theme-accent-text)!important;border-color:var(--user-accent)!important}
+html[data-theme] .button.secondary,html[data-theme] .button.secondary:hover{background:var(--theme-soft)!important;color:var(--theme-text)!important;border-color:var(--theme-border)!important}
+html[data-theme] .text-link,html[data-theme] .file-link{color:var(--theme-text)!important;text-decoration:underline;text-decoration-color:var(--user-accent)!important;text-underline-offset:3px}
+html[data-theme] .cash-card-kicker,html[data-theme] .cash-session-label{color:var(--theme-muted)!important}
+html[data-theme] .dashboard-forecast-label>i{color:var(--theme-text)!important}
+html[data-theme] .form-grid label,html[data-theme] .form-stack label,html[data-theme] .settings-card label{color:var(--theme-text)}
+html[data-theme] .help-text,html[data-theme] .hint,html[data-theme] .settings-card>p{color:var(--theme-muted)!important}
+html[data-theme] .table-wrap th,html[data-theme] .table-wrap td{color:var(--theme-text)!important}
+/* One focused Compra/Venda panel, with daily and month-to-date views. */
+.buy-sell-dashboard{display:flex;flex-direction:column;gap:var(--space-3);min-width:0;padding:16px}
+.buy-sell-dashboard-head{align-items:center;margin:0}
+.buy-sell-dashboard-head h2{margin:0;color:var(--theme-text);font:700 16px Manrope,sans-serif}
+.buy-sell-dashboard-head p{margin:4px 0 0;color:var(--theme-muted);font-size:12px;line-height:1.45}
+.buy-sell-dashboard-actions{display:flex;align-items:center;gap:var(--space-3);flex:none}
+.buy-sell-dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);min-width:0}
+.buy-sell-period-card{display:grid;align-content:space-between;gap:11px;min-width:0;padding:16px;border:1px solid var(--theme-border);border-radius:12px;background:var(--theme-panel);color:var(--theme-text)}
+.buy-sell-period-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.buy-sell-period-heading h3{margin:0;color:var(--theme-text);font:700 13px Manrope,sans-serif}
+.buy-sell-period-heading>span{color:var(--theme-muted);font-size:11px;white-space:nowrap}
+.buy-sell-ratio-value{display:block;color:var(--theme-text);font:800 clamp(25px,3vw,34px)/1.15 Manrope,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.buy-sell-period-breakdown{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.buy-sell-period-breakdown>span{display:grid;gap:4px;min-width:0;color:var(--theme-muted);font-size:11px}
+.buy-sell-period-breakdown b{color:var(--theme-text);font-size:14px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.buy-sell-period-card>small{color:var(--theme-muted);font-size:11px;line-height:1.5}
+.buy-sell-ratio-meter{position:relative;height:9px;min-width:0;margin:0 0 2px;overflow:visible;border-radius:99px;background:var(--theme-soft)}
+.buy-sell-ratio-meter>i{display:block;width:var(--ratio-width);height:100%;border-radius:inherit;background:var(--progress-color-1)}
+.buy-sell-ratio-meter>b{position:absolute;top:-3px;left:var(--target-position);width:2px;height:15px;border-radius:2px;background:var(--theme-text);transform:translateX(-1px)}
+.buy-sell-month-delta{margin:0;color:var(--theme-text);font-size:12px;font-weight:700}
+.buy-sell-month-card>small{overflow-wrap:anywhere}
+.buy-sell-goal-form{display:grid;grid-template-columns:1fr;gap:6px;padding-top:11px;border-top:1px solid var(--theme-border)}
+.buy-sell-goal-form>label{color:var(--theme-text);font-size:11px;font-weight:700}
+.buy-sell-goal-form>div{display:flex;align-items:center;gap:8px;min-width:0}
+.buy-sell-goal-form input{width:88px;min-width:0;min-height:34px;padding:6px 8px;border:1px solid var(--theme-border);border-radius:7px;background:var(--theme-control);color:var(--theme-text);font:inherit;font-variant-numeric:tabular-nums}
+.buy-sell-goal-form>div>span{color:var(--theme-muted);font-size:12px}
+.buy-sell-goal-form .button{min-height:34px;margin-left:auto;padding:6px 10px;font-size:11px}
+@media(max-width:767px){.buy-sell-dashboard{padding:13px}.buy-sell-dashboard-head{align-items:flex-start}.buy-sell-dashboard-grid{grid-template-columns:minmax(0,1fr);gap:var(--space-2)}.buy-sell-period-card{padding:14px}}
+@media(max-width:420px){.buy-sell-dashboard-head{flex-direction:column;gap:8px}.buy-sell-dashboard-actions{width:100%;justify-content:flex-start}.buy-sell-period-breakdown{gap:8px}.buy-sell-goal-form .button{padding:5px 8px}}

@@ -4,7 +4,7 @@ Adapte o padrão abaixo ao sistema informado, preservando a identidade visual ex
 
 ## Objetivo visual
 
-Crie uma interface financeira coesa, legível e acessível. Cada tema deve ter uma cor de identidade marcante, mas usar superfícies sólidas e neutras para manter os dados em primeiro plano. Evite gradientes decorativos, fundos pretos puros e cores saturadas em grandes áreas. Use a cor principal em ações, estados selecionados e pequenos indicadores; mantenha texto e números com contraste suficiente.
+Crie uma interface financeira coesa, legível e acessível. A escolha do tema nunca pode reduzir a leitura ou dificultar o uso: mantenha textos, números, campos, controles e divisórias em cores neutras de alto contraste, iguais entre os temas do mesmo modo. A identidade de cada tema pode aparecer em ações, estados selecionados e pequenos indicadores, mas calcule a cor do texto sobre essas áreas para manter contraste adequado. Use superfícies sólidas e neutras para manter os dados em primeiro plano. Evite gradientes decorativos, fundos pretos puros e cores saturadas em grandes áreas.
 
 ## Paletas e modos
 

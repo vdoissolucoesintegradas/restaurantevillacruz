@@ -314,6 +314,20 @@ app.get('/api/dashboard', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+app.get('/api/dashboard/buy-sell',allow('admin','owner','finance','auditor'),async(req,res,next)=>{
+  try{
+    const unit=await routeUnit(req,res);if(!unit)return;if(!req.can('expenses.view'))return fail(res,403,'Seu acesso não permite consultar este índice financeiro.');
+    const date=validDate(req.query.date)?req.query.date:localToday(),[year,month,day]=date.split('-').map(Number),monthStart=`${date.slice(0,7)}-01`,previousDate=new Date(Date.UTC(year,month-2,1)),previousMonth=`${previousDate.getUTCFullYear()}-${String(previousDate.getUTCMonth()+1).padStart(2,'0')}`,previousStart=`${previousMonth}-01`,previousLastDay=new Date(Date.UTC(year,month-1,0)).getUTCDate(),previousEnd=`${previousMonth}-${String(Math.min(day,previousLastDay)).padStart(2,'0')}`;
+    const objects=['INSUMO','INSUMOS','DESCARTAVEL','DESCARTAVEIS','DESCARTÁVEL','DESCARTÁVEIS','LIMPEZA'];
+    const [sales,purchases]=await Promise.all([
+      pool.query(`SELECT COALESCE(sum(amount_cents) FILTER(WHERE sale_date=$2),0)::text day_cents,count(*) FILTER(WHERE sale_date=$2)::int day_count,COALESCE(sum(amount_cents) FILTER(WHERE sale_date=$5),0)::text previous_day_cents,count(*) FILTER(WHERE sale_date=$5)::int previous_day_count,COALESCE(sum(amount_cents) FILTER(WHERE sale_date BETWEEN $3 AND $2),0)::text current_cents,count(*) FILTER(WHERE sale_date BETWEEN $3 AND $2)::int current_count,COALESCE(sum(amount_cents) FILTER(WHERE sale_date BETWEEN $4 AND $5),0)::text previous_cents,count(*) FILTER(WHERE sale_date BETWEEN $4 AND $5)::int previous_count FROM sales WHERE unit_id=$1 AND status='confirmed' AND sale_date BETWEEN $4 AND $2`,[unit.id,date,monthStart,previousStart,previousEnd]),
+      pool.query(`SELECT COALESCE(sum(total_cents) FILTER(WHERE issue_date=$2),0)::text day_cents,count(*) FILTER(WHERE issue_date=$2)::int day_count,COALESCE(sum(total_cents) FILTER(WHERE issue_date=$5),0)::text previous_day_cents,count(*) FILTER(WHERE issue_date=$5)::int previous_day_count,COALESCE(sum(total_cents) FILTER(WHERE issue_date BETWEEN $3 AND $2),0)::text current_cents,count(*) FILTER(WHERE issue_date BETWEEN $3 AND $2)::int current_count,COALESCE(sum(total_cents) FILTER(WHERE issue_date BETWEEN $4 AND $5),0)::text previous_cents,count(*) FILTER(WHERE issue_date BETWEEN $4 AND $5)::int previous_count FROM expenses WHERE unit_id=$1 AND status IN ('open','paid') AND UPPER(BTRIM(COALESCE(business_object,'')))=ANY($6::text[]) AND issue_date BETWEEN $4 AND $2`,[unit.id,date,monthStart,previousStart,previousEnd,objects])
+    ]);
+    const shape=row=>({day_cents:row.day_cents,day_count:row.day_count,previous_day_cents:row.previous_day_cents,previous_day_count:row.previous_day_count,current_cents:row.current_cents,current_count:row.current_count,previous_cents:row.previous_cents,previous_count:row.previous_count});
+    res.json({date,month_from:monthStart,previous_from:previousStart,previous_to:previousEnd,sales:shape(sales.rows[0]),purchases:shape(purchases.rows[0])});
+  }catch(e){next(e);}
+});
+
 app.get('/api/operations/tasks',allow('admin','owner','finance','operations','auditor'),async(req,res,next)=>{
   try{
     const u=await routeUnit(req,res);if(!u)return;const date=validDate(req.query.date)?req.query.date:localToday();
