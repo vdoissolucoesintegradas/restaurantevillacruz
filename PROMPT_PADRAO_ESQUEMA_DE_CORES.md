@@ -18,7 +18,7 @@ Ofereça temas predefinidos para: identidade da empresa, vermelho, azul, verde n
 - fundo do cabeçalho e do menu lateral;
 - cor de destaque para botões e estados selecionados.
 
-No modo claro, use superfícies claras. No modo escuro, use superfícies sólidas em tons de azul-marinho consistentes em todos os temas, nunca preto puro ou fundos escuros de outra família cromática. A identidade de cada tema continua visível nos destaques e nas barras de evolução. Menu lateral, cabeçalho, conteúdo, formulários, tabelas, modais, estados, ícones e botões devem mudar juntos e permanecer dentro da mesma família visual.
+No modo claro, use superfícies claras. No modo escuro, use superfícies sólidas neutras em grafite, sem azul como cor-base fixa. A identidade de cada tema aparece nos destaques configuráveis; quatro cores próprias ficam reservadas às barras de evolução. Menu lateral, cabeçalho, conteúdo, formulários, tabelas, modais, estados, ícones e botões devem mudar juntos e permanecer dentro da mesma família visual.
 
 ## Cores de evolução
 

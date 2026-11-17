@@ -755,6 +755,25 @@ html[data-theme] .card,html[data-theme] .table-card,html[data-theme] .form-card,
 @media(min-width:960px){.breakages-summary-row{display:grid;grid-template-columns:minmax(270px,.95fr) minmax(0,1.5fr);align-items:stretch;gap:var(--space-3);min-width:0}.breakages-summary-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:var(--space-2);min-width:0}.breakages-summary-kpis .mini-kpi{display:flex;min-width:0;min-height:44px;flex-direction:column;justify-content:center;align-items:flex-start;gap:4px;padding:7px 10px;white-space:normal;font-size:clamp(9px,.82vw,11px);line-height:1.25}.breakages-summary-kpis .mini-kpi strong{min-width:0;margin:0;white-space:nowrap;font-size:clamp(11px,1vw,13px);font-variant-numeric:tabular-nums}.breakages-period-filter{display:grid;grid-template-columns:minmax(120px,.72fr) minmax(0,1.5fr);align-items:center;gap:var(--space-3);min-width:0;margin:0;padding:10px 12px}.breakages-period-filter .period-filter-intro h2{margin:0;font-size:13px}.breakages-period-filter .period-filter-intro p{margin:4px 0 0;font-size:10px;line-height:1.4}.breakages-period-filter .period-filter-controls{grid-template-columns:repeat(2,minmax(0,1fr)) minmax(66px,.52fr);gap:6px;min-width:0}.breakages-period-filter .period-filter-controls label{min-width:0;font-size:10px}.breakages-period-filter .period-filter-controls input{width:100%;min-width:0;min-height:36px;padding:6px;font-size:11px}.breakages-period-filter .period-filter-actions,.breakages-period-filter .period-filter-actions .button{min-width:0;width:100%}}
 @media(max-width:959px){.breakages-summary-row{display:grid;gap:var(--space-3);min-width:0}.breakages-summary-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-2);min-width:0}.breakages-summary-kpis .mini-kpi{min-width:0}.breakages-period-filter{margin:0}}
 
+/* Purchase-versus-sales overview uses the same KPI cards as the dashboard row. */
+.buy-sell-dashboard{display:flex;flex-direction:column;gap:var(--space-3);min-width:0}
+.buy-sell-dashboard-head{align-items:center;margin:0}
+.buy-sell-dashboard-head h2{margin:0;font:700 13px Manrope,sans-serif;color:var(--theme-text)}
+.buy-sell-dashboard-head p{margin:4px 0 0;color:var(--theme-muted);font-size:10px;line-height:1.45}
+.buy-sell-dashboard-actions{display:flex;align-items:center;gap:var(--space-3);flex:none}
+.buy-sell-dashboard-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-3);min-width:0}
+.buy-sell-metric{display:flex;min-width:0;min-height:124px;flex-direction:column;justify-content:flex-start}
+.buy-sell-metric .kpi-top{min-width:0;text-transform:uppercase;letter-spacing:.45px;font-weight:700}
+.buy-sell-metric .kpi-value{display:block;min-width:0;overflow-wrap:anywhere;font-size:clamp(17px,1.5vw,22px);font-variant-numeric:tabular-nums}
+.buy-sell-metric .kpi-foot{margin-top:auto;line-height:1.4}
+.buy-sell-ratio-card .kpi-value{margin-bottom:8px}
+.buy-sell-ratio-meter{position:relative;height:7px;min-width:0;margin:0 0 9px;overflow:visible;border-radius:99px;background:var(--theme-border)}
+.buy-sell-ratio-meter i{display:block;width:var(--ratio-width);height:100%;border-radius:inherit;background:var(--progress-color-1)}
+.buy-sell-ratio-meter b{position:absolute;top:-3px;left:var(--target-position);width:2px;height:13px;border-radius:2px;background:var(--theme-text);transform:translateX(-1px)}
+@media(max-width:1100px){.buy-sell-dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:767px){.buy-sell-dashboard-head{align-items:flex-start}.buy-sell-dashboard-actions{gap:8px}.buy-sell-dashboard-grid{gap:var(--space-2)}.buy-sell-metric{min-height:120px;padding:13px}}
+@media(max-width:420px){.buy-sell-dashboard-head{flex-direction:column;gap:8px}.buy-sell-dashboard-actions{width:100%;justify-content:flex-start}.buy-sell-metric{min-height:116px;padding:11px}.buy-sell-metric .kpi-value{font-size:16px}.buy-sell-metric .kpi-foot{font-size:9px}}
+
 /* Use the configured palette only for progress bars, with solid fills. */
 html[data-theme] .progress-fill{background:var(--progress-color-1)!important;background-image:none!important;box-shadow:none!important}
 html[data-theme] .dashboard-channel-track>span.current,html[data-theme] .sales-bar-fill.sales-bar-current{background:var(--progress-color-2)!important;background-image:none!important;box-shadow:none!important}
@@ -770,6 +789,15 @@ html[data-theme] .dashboard-forecast-card::before{background:var(--user-accent)!
 html[data-theme] .dashboard-forecast-metric,html[data-theme] .dashboard-forecast-metric.net{background:var(--theme-panel)!important;border-color:var(--theme-border)!important;box-shadow:none!important}
 html[data-theme] .dashboard-forecast-label>i,html[data-theme] .dashboard-forecast-metric.inflow .dashboard-forecast-label>i,html[data-theme] .dashboard-forecast-metric.outflow .dashboard-forecast-label>i,html[data-theme] .dashboard-forecast-metric.net .dashboard-forecast-label>i{background:var(--theme-soft)!important;color:var(--user-accent)!important}
 html[data-theme] .dashboard-forecast-metric.net>strong{color:var(--theme-text)!important}
+/* Slightly larger comparison figures and labels, with tiles using the card width more evenly. */
+.dashboard-chart-card:has(.dashboard-dre-metrics){display:flex;min-width:0;flex-direction:column}
+.dashboard-chart-card:has(.dashboard-dre-metrics) .dashboard-dre-metrics{flex:1;grid-auto-rows:minmax(88px,1fr);gap:var(--space-3)}
+.dashboard-chart-card:has(.dashboard-dre-metrics) .dashboard-dre-metrics article{align-content:center;gap:7px;min-height:88px;padding:14px}
+.dashboard-dre-metrics article>span{font-size:10px}
+.dashboard-dre-metrics article>strong{font-size:19px}
+.dashboard-dre-metrics article>small{font-size:10px}
+.dashboard-dre-metrics article>em{font-size:10px}
+@media(max-width:767px){.dashboard-chart-card:has(.dashboard-dre-metrics) .dashboard-dre-metrics article{min-height:82px;padding:12px}.dashboard-dre-metrics article>strong{font-size:18px}}
 @media(min-width:768px){.period-filter-card{grid-template-columns:minmax(170px,.8fr) minmax(0,1.8fr);gap:var(--space-4);margin:0;padding:12px 15px}.period-filter-controls{grid-template-columns:repeat(2,minmax(145px,1fr)) minmax(88px,.5fr);gap:var(--space-2)}.period-filter-controls .period-filter-actions{grid-column:auto;min-width:0}.period-filter-controls .period-filter-actions .button{width:100%;min-width:0}.page-wrap #page-content>.mini-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-2)}.page-wrap #page-content>.mini-kpis .mini-kpi{min-width:0;padding:8px 10px;white-space:nowrap;font-size:clamp(9px,.9vw,11px)}.page-wrap #page-content>.mini-kpis .mini-kpi strong{white-space:nowrap;font-variant-numeric:tabular-nums}}
 @media(min-width:768px) and (max-width:1100px){.period-filter-card{grid-template-columns:minmax(150px,.72fr) minmax(0,1.8fr);gap:var(--space-3);padding:10px 12px}.period-filter-controls{grid-template-columns:repeat(2,minmax(120px,1fr)) minmax(78px,.5fr);gap:6px}.period-filter-controls input{padding:6px;font-size:10px}.page-wrap #page-content>.mini-kpis .mini-kpi{padding:7px 8px;font-size:9px}}
 @media(max-width:767px){.settings-page-grid .theme-presets{grid-template-columns:repeat(3,minmax(0,1fr))}.page-wrap #page-content>.mini-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-2)}.page-wrap #page-content>.mini-kpis .mini-kpi{min-width:0}}
@@ -785,3 +813,11 @@ html[data-theme] .dashboard-forecast-metric.net>strong{color:var(--theme-text)!i
 .modal.entry-modal .form-grid .help-text,.modal.entry-modal .form-grid .hint{font-size:11px;line-height:1.5}
 @media(max-width:767px){.modal.entry-modal{width:100%;max-width:none;max-height:calc(100dvh - 20px);padding:17px}.modal.entry-modal .form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 10px}.modal.entry-modal .form-grid input,.modal.entry-modal .form-grid select,.modal.entry-modal .form-grid textarea{min-height:43px;padding:9px 10px;font-size:12px}}
 @media(max-width:420px){.settings-page-grid .theme-presets{grid-template-columns:repeat(2,minmax(0,1fr))}.modal.entry-modal{padding:14px}.modal.entry-modal .form-grid{gap:13px 8px}}
+
+/* Dark mode uses neutral graphite surfaces; configured theme colors remain accents. */
+html[data-theme="dark"]{--theme-page:#20252d;--theme-panel:#292f39;--theme-soft:#363e49;--theme-control:#242b34;--theme-border:#46505d;--theme-nav:#29313c}
+html[data-theme="dark"] body,html[data-theme="dark"] .app-shell,html[data-theme="dark"] .main-content,html[data-theme="dark"] .page-wrap{background:var(--theme-page)!important;background-image:none!important;color:var(--theme-text)!important}
+html[data-theme="dark"] .sidebar,html[data-theme="dark"] .app-topbar,html[data-theme="dark"] .topbar{background:var(--theme-nav)!important;background-image:none!important;color:var(--theme-text)!important;border-color:var(--theme-border)!important}
+html[data-theme="dark"] .card,html[data-theme="dark"] .kpi-card,html[data-theme="dark"] .section-card,html[data-theme="dark"] .form-card,html[data-theme="dark"] .table-card,html[data-theme="dark"] .period-filter-card,html[data-theme="dark"] .cash-session-summary,html[data-theme="dark"] .cash-balance-card,html[data-theme="dark"] .cash-closed-details,html[data-theme="dark"] .flow-coverage,html[data-theme="dark"] .alert-row,html[data-theme="dark"] .mini-kpi,html[data-theme="dark"] .dashboard-block[data-dashboard-block="today-result"],html[data-theme="dark"] .dashboard-chart-card,html[data-theme="dark"] .dashboard-forecast-card,html[data-theme="dark"] .settings-card,html[data-theme="dark"] .dashboard-dre-metrics article,html[data-theme="dark"] .dashboard-forecast-metric{background:var(--theme-panel)!important;background-image:none!important;color:var(--theme-text)!important;border-color:var(--theme-border)!important;box-shadow:none!important}
+html[data-theme="dark"] th,html[data-theme="dark"] .table thead,html[data-theme="dark"] .dashboard-result-highlight,html[data-theme="dark"] .dashboard-chart-legend{background:var(--theme-soft)!important;color:var(--theme-text)!important;border-color:var(--theme-border)!important}
+html[data-theme="dark"] tr:nth-child(even),html[data-theme="dark"] .table tbody tr:nth-child(even){background:var(--theme-soft)!important}
