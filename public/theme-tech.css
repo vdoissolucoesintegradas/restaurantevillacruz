@@ -1087,3 +1087,7 @@ html[data-theme] .cash-summary-row .financial-summary-kpis .mini-kpi strong{font
 @media (max-width: 767px) {
   #page-content .section-head { flex-wrap: wrap; }
 }
+
+.launch-responsible-field { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.launch-responsible-field select { width: 100%; min-width: 0; }
+@media (max-width: 560px) { .launch-responsible-field { grid-template-columns: minmax(0, 1fr); } }

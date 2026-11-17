@@ -51,6 +51,7 @@ const RULES = [
   ['POST', '/api/purchase-orders', 'purchases.create'], ['POST', '/api/purchase-orders/:id/receive', 'purchases.receive'],
   ['POST', '/api/payment-methods', 'settings.manage'], ['PATCH', '/api/payment-methods/:id', 'settings.manage'],
   ['POST', '/api/expense-natures', 'settings.manage'], ['PATCH', '/api/expense-natures/:id', 'settings.manage'], ['DELETE', '/api/expense-natures/:id', 'settings.manage'],
+  ['GET','/api/launch-responsibles','cash.view'], ['POST','/api/launch-responsibles','cash.move'],
   ['GET', '/api/cash', 'cash.view'], ['GET', '/api/cash/discrepancies', 'cash.analyze'], ['GET', '/api/cash/forecast', 'cash.analyze'], ['GET', '/api/reports/cash.csv', 'cash.analyze'],
   ['POST', '/api/settings/cash-discrepancy-alerts', 'settings.manage'],
   ['POST', '/api/cash/open', 'cash.shift'], ['POST', '/api/cash/close', 'cash.shift'], ['POST', '/api/cash/movements', 'cash.move'],
