@@ -309,3 +309,123 @@ html .login-screen .login-privacy {
   border-color: #465a6d;
   background: transparent;
 }
+
+#login-screen .login-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, .9fr);
+  align-items: center;
+  gap: clamp(24px, 5vw, 72px);
+  width: min(100%, 1000px);
+}
+
+#login-screen .login-card {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+  max-width: none;
+}
+
+.login-showcase {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  color: #f6f8fc;
+}
+
+.login-showcase h2 {
+  margin: 0 0 8px;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.15;
+}
+
+.login-showcase > p {
+  margin: 0 0 20px;
+  color: #bfcedd;
+  font-size: 15px;
+}
+
+.login-preview {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 14px;
+  border: 1px solid #465a6d;
+  border-radius: 12px;
+  background: #202e3c;
+}
+
+.login-preview figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.login-preview figcaption span,
+.login-preview-metrics span,
+.login-preview-chart > span,
+.login-showcase-features span {
+  color: #bfcedd;
+  font-size: 12px;
+}
+
+.login-preview-metrics,
+.login-showcase-features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.login-preview-metrics > div,
+.login-preview-chart {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #465a6d;
+  border-radius: 8px;
+  background: #192735;
+}
+
+.login-preview-metrics strong {
+  font-size: clamp(13px, 1.6vw, 18px);
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.login-preview-bars {
+  display: flex;
+  align-items: end;
+  gap: 10%;
+  height: 55px;
+  border-bottom: 1px solid #465a6d;
+}
+
+.login-preview-bars i {
+  flex: 1;
+  height: 46%;
+  border-radius: 4px 4px 0 0;
+  background: #5785ad;
+}
+.login-preview-bars i:nth-child(2) { height: 62%; }
+.login-preview-bars i:nth-child(3) { height: 72%; }
+.login-preview-bars i:nth-child(4) { height: 88%; }
+
+.login-showcase-features {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.login-showcase-features li { display: grid; gap: 2px; padding: 4px 0; }
+.login-showcase-features strong { font-size: 13px; }
+
+@media (max-width: 767px) {
+  #login-screen .login-layout {
+    grid-template-columns: minmax(0, 1fr);
+    width: min(100%, 440px);
+  }
+  #login-screen .login-card { grid-column: 1; grid-row: 1; }
+  .login-showcase { grid-row: 2; }
+}
