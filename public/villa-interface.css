@@ -217,3 +217,95 @@ html[data-theme] .sidebar .brand-caption {
     display: none;
   }
 }
+
+/* Authentication uses the same slate and blue palette as the application. */
+html .login-screen {
+  color-scheme: dark;
+  box-sizing: border-box;
+  align-items: center;
+  padding: 24px 16px;
+  background: #18232f;
+  color: #f6f8fc;
+}
+
+html .login-screen .login-layout {
+  display: block;
+  width: min(100%, 420px);
+  margin: auto;
+}
+
+html .login-screen .login-card {
+  box-sizing: border-box;
+  width: min(100%, 420px);
+  padding: clamp(22px, 5vw, 36px);
+  border: 1px solid #465a6d;
+  border-radius: 12px;
+  background: #202e3c;
+  box-shadow: 0 12px 30px #101a2540;
+  color: #f6f8fc;
+}
+
+html .login-screen .brand-logo-login {
+  display: block;
+  max-width: min(100%, 176px);
+  max-height: 78px;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto 20px;
+}
+
+html .login-screen .login-card h1 {
+  margin: 0 0 6px;
+  color: #f6f8fc;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+html .login-screen .login-card :is(.muted, .hint, .login-foot, .login-privacy, .login-status, .eyebrow) {
+  color: #bfcedd;
+}
+
+html .login-screen .login-card label {
+  color: #e6edf5;
+  font-size: 13px;
+}
+
+html .login-screen .login-card input {
+  min-height: 44px;
+  font-size: 16px;
+  background: #192735 !important;
+  border: 1px solid #61788e !important;
+  color: #f6f8fc !important;
+}
+
+html .login-screen .login-card :is(input, .button):focus-visible {
+  outline: 2px solid #a9c9e8;
+  outline-offset: 2px;
+}
+
+html .login-screen .login-card .button.primary {
+  min-height: 44px;
+  background: #315d87 !important;
+  border-color: #315d87 !important;
+  color: #fff !important;
+  box-shadow: none;
+}
+
+html .login-screen .login-card .button.primary:hover {
+  background: #3a6a99 !important;
+  border-color: #3a6a99 !important;
+}
+
+html .login-screen .login-card .form-error {
+  color: #ffb4ad;
+}
+
+html .login-screen .login-card :is(.form-error, .login-status):empty {
+  display: none;
+}
+
+html .login-screen .login-privacy {
+  margin-top: 16px;
+  border-color: #465a6d;
+  background: transparent;
+}
