@@ -1,0 +1,219 @@
+/* Villa Cruz application surfaces, navigation, and financial views. */
+html[data-theme="dark"] {
+  --theme-page: #18232f !important;
+  --theme-nav: #192531 !important;
+  --theme-header: #192531 !important;
+  --theme-panel: #202e3c !important;
+  --theme-soft: #263b4e !important;
+  --theme-control: #192735 !important;
+  --theme-border: #52687e !important;
+  --theme-text: #f6f8fc !important;
+  --theme-muted: #bfcedd !important;
+  --theme-accent-text: #fff !important;
+  --paper: var(--theme-page) !important;
+  --card: var(--theme-panel) !important;
+  --soft: var(--theme-soft) !important;
+  --line: var(--theme-border) !important;
+}
+
+html[data-theme] {
+  --villa-action: #0876d6;
+  --villa-action-hover: #0666bd;
+  --villa-radius: 10px;
+}
+
+html[data-theme] body {
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+
+html[data-theme] .sidebar .brand {
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: center;
+  gap: 0 8px;
+}
+
+html[data-theme] .sidebar .brand-name {
+  font-size: 22px;
+  line-height: 1.15;
+  letter-spacing: .025em;
+  text-transform: uppercase;
+}
+
+html[data-theme] .sidebar .brand-caption {
+  grid-column: 1;
+  margin: 2px 0 0;
+  text-align: left;
+  color: var(--theme-muted);
+  font-size: 11px;
+  letter-spacing: .14em;
+}
+
+html[data-theme] .sidebar .sidebar-collapse {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+}
+
+html[data-theme] .sidebar .nav-item:not(.active) {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+html[data-theme] .sidebar .nav-item:not(.active):hover {
+  background: var(--theme-soft) !important;
+}
+
+html[data-theme] .sidebar #navigation .nav-item.active,
+html[data-theme] .button.primary {
+  background: var(--villa-action) !important;
+  border-color: var(--villa-action) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+html[data-theme] .sidebar #navigation .nav-item.active .nav-icon {
+  color: #fff !important;
+}
+
+html[data-theme] .button.primary:hover {
+  background: var(--villa-action-hover) !important;
+  border-color: var(--villa-action-hover) !important;
+}
+
+html[data-theme] .page-wrap .page-topline {
+  display: none;
+}
+
+html[data-theme] .page-wrap {
+  padding-top: 18px;
+}
+
+html[data-theme] #page-content :is(.card, .mini-kpi),
+html[data-theme] .modal {
+  border-radius: var(--villa-radius);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] #page-content :is(.financial-summary-kpis, .breakages-summary-kpis) .mini-kpi {
+  background: var(--theme-panel) !important;
+  border-color: var(--theme-border);
+}
+
+html[data-theme] #page-content :is(.section-head, .table-toolbar, .cash-card-heading) {
+  gap: 10px;
+}
+
+html[data-theme="dark"] #page-content thead th {
+  background: #26435d !important;
+}
+
+html[data-theme="dark"] #page-content tbody tr:nth-child(even) {
+  background: #233343 !important;
+}
+
+html[data-theme] #page-content :is(th, td) {
+  padding-block: 8px;
+}
+
+html[data-theme] :is(.modal, #page-content) :is(.form-grid, .cash-fields-grid) {
+  align-items: start;
+}
+
+html[data-theme] :is(.modal, #page-content) :is(.form-grid, .cash-fields-grid) label {
+  min-width: 0;
+  align-content: start;
+}
+
+html[data-theme] #page-content .cash-summary-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+html[data-theme] #page-content .cash-summary-row .financial-summary-kpis {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+html[data-theme] #page-content .cash-summary-row .financial-summary-kpis .mini-kpi {
+  min-height: 76px;
+  justify-content: center;
+  border-inline-start: 3px solid #309cf5;
+}
+html[data-theme] #page-content .cash-summary-row .financial-summary-kpis .mini-kpi:nth-child(2) {
+  border-inline-start-color: #e4777d;
+}
+html[data-theme] #page-content .cash-summary-row .financial-summary-kpis .mini-kpi:nth-child(3) {
+  border-inline-start-color: #dfae55;
+}
+html[data-theme] #page-content .cash-summary-row .financial-summary-kpis .mini-kpi:nth-child(4) {
+  border-inline-start-color: #47bd8e;
+}
+
+html[data-theme] #page-content .cash-summary-row .financial-period-filter #cash-period-filter {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: start;
+}
+
+html[data-theme] #page-content .cash-summary-row .financial-period-filter #cash-period-filter .form-actions {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: end;
+}
+
+@media (min-width: 768px) {
+  html[data-theme] .app-topbar {
+    height: 60px;
+    gap: 16px;
+    border-bottom: 1px solid var(--theme-border);
+  }
+  html[data-theme] .main-content {
+    padding-top: 60px;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-theme="dark"] .mobile-header {
+    background: var(--theme-nav) !important;
+    border-bottom: 1px solid var(--theme-border);
+  }
+  html[data-theme] #page-content .cash-summary-row .financial-summary-kpis,
+  html[data-theme] #page-content .cash-summary-row .financial-period-filter #cash-period-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  html[data-theme] #page-content .cash-summary-row .financial-period-filter #cash-period-filter .form-actions {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+}
+
+html[data-theme="dark"] :is(.cash-discrepancy-filter, .cash-alert-settings-form) {
+  background: var(--theme-control);
+  border-color: var(--theme-border);
+}
+
+html[data-theme="dark"] #page-content .mini-kpi strong {
+  color: var(--theme-text);
+}
+
+html[data-theme] #page-content .cash-discrepancy-card > .mini-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 8px;
+}
+
+html[data-theme] #page-content .cash-discrepancy-card > .mini-kpis .mini-kpi {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  white-space: normal;
+}
+
+html[data-theme] .sidebar .brand-caption {
+  display: block;
+}
+
+@media (min-width: 768px) {
+  html[data-theme] body.sidebar-collapsed .sidebar .brand-caption {
+    display: none;
+  }
+}
